@@ -8,6 +8,51 @@ cp -r /home/kicad/.config/kicad $HOME/.config/
 erc_violation=0 # ERC exit code
 drc_violation=0 # DRC exit code
 
+# Check if the current version is the latest version
+current_ref="${GITHUB_ACTION_REF:-unknown}"
+current_version="${current_ref##*/}"  # remove refs/heads or refs/tags prefix
+
+# Get latest tag from GitHub API
+latest_tag=$(curl -s "https://api.github.com/repos/${GITHUB_ACTION_REPOSITORY}/releases/latest" | jq -r '.tag_name')
+
+# Strip leading v and ignore suffix after '-'
+strip_version() {
+  echo "$1" | sed -E 's/^v//; s/-.*$//'
+}
+
+# Check if the latest tag is not empty
+if [[ -n "$latest_tag" ]]; then
+  latest_clean=$(strip_version "$latest_tag")
+  current_clean=$(strip_version "$current_version")
+
+  # Extract major.minor
+  latest_major="${latest_clean%%.*}"
+  latest_minor="${latest_clean#*.}"
+  latest_minor="${latest_minor%%.*}"
+
+  current_major="${current_clean%%.*}"
+  current_minor="${current_clean#*.}"
+  current_minor="${current_minor%%.*}"
+
+  # Determine if current is floating major (like 'v1')
+  is_floating_major=false
+  if [[ "$current_version" =~ ^v[0-9]+$ ]]; then
+    is_floating_major=true
+  fi
+
+  if $is_floating_major; then
+    if [ "$current_major" != "$latest_major" ]; then
+      echo "::warning::You are using version '$current_version', but the latest version is '$latest_major'. Consider updating."
+    fi
+  else
+    if [ "$current_major" != "$latest_major" ] || [ "$current_minor" != "$latest_minor" ]; then
+      echo "::warning::You are using version '$current_version', but the latest version is '$latest_tag'. Consider updating."
+    fi
+  fi
+else
+  echo "::warning::Could not fetch the latest version from GitHub API. It is unknown if the version that is currently used is the latest version."
+fi
+
 # Check if KiCad is installed
 if ! command -v kicad-cli &> /dev/null; then
     echo "::error::KiCad is not installed."
