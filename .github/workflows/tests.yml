@@ -249,6 +249,10 @@ jobs:
             "pos-gerber",
             "ipc2581",
             "step",
+            "image-png-bottom-floor",
+            "image-png-top-opaque",
+            "image-jpg-left",
+            "image-jpeg-back-floor",
           ]
         include:
           - test_name: drill-excellon
@@ -314,6 +318,30 @@ jobs:
           - test_name: step
             output_flag: pcb_output_step
             expected_files: pcb.step
+          - test_name: image-png-bottom-floor
+            output_flag: pcb_output_image
+            expected_files: pcb.png
+            pcb_output_image_side: bottom
+            pcb_output_image_floor: true
+          - test_name: image-png-top-opaque
+            output_flag: pcb_output_image
+            expected_files: image.png
+            pcb_output_image_file_name: image.png
+            pcb_output_image_side: top
+            pcb_output_image_background: opaque
+            pcb_output_image_width: 800
+            pcb_output_image_height: 800
+          - test_name: image-jpg-left
+            output_flag: pcb_output_image
+            expected_files: image.jpg
+            pcb_output_image_file_name: image.jpg
+            pcb_output_image_side: left
+          - test_name: image-jpeg-back-floor
+            output_flag: pcb_output_image
+            expected_files: image.jpeg
+            pcb_output_image_file_name: image.jpeg
+            pcb_output_image_side: back
+            pcb_output_image_floor: true
 
     steps:
       - name: Checkout Repository
@@ -331,6 +359,12 @@ jobs:
           pcb_output_black_white: ${{ matrix.pcb_output_black_white || false }}
           pcb_output_pos_format: ${{ matrix.pcb_output_pos_format || 'ascii' }}
           pcb_output_pos_side: ${{ matrix.pcb_output_pos_side || 'both' }}
+          pcb_output_image_file_name: ${{ matrix.pcb_output_image_file_name || 'pcb.png' }}
+          pcb_output_image_side: ${{ matrix.pcb_output_image_side || 'top' }}
+          pcb_output_image_background: ${{ matrix.pcb_output_image_background || 'default' }}
+          pcb_output_image_width: ${{ matrix.pcb_output_image_width || 1600 }}
+          pcb_output_image_height: ${{ matrix.pcb_output_image_height || 900 }}
+          pcb_output_image_floor: ${{ matrix.pcb_output_image_floor || false }}
 
       - name: Verify output files
         run: |
@@ -360,6 +394,7 @@ jobs:
           footprint_libraries: test-fp-library=tests/kicad-project-success/test-fp-library.pretty
           run_drc: true
           pcb_output_gerbers_and_drill: true
+          pcb_output_image: true
 
       - name: Upload schematic
         uses: actions/upload-artifact@v4
@@ -373,4 +408,11 @@ jobs:
         with:
           name: Gerbers
           path: ./gerbers
+          if-no-files-found: error
+
+      - name: Upload image render
+        uses: actions/upload-artifact@v4
+        with:
+          name: Image render
+          path: ./pcb.png
           if-no-files-found: error
