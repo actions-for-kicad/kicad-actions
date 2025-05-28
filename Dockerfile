@@ -7,5 +7,4 @@ COPY entrypoint.sh /entrypoint.sh
 
 RUN pip install PyYaml
 
-# ENTRYPOINT ["/entrypoint.sh"]
-CMD ["python", "--version"]
+CMD ["python", "main.py"]
