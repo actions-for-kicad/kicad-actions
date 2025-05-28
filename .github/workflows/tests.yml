@@ -5,12 +5,16 @@ on:
     branches:
       - main
     paths-ignore:
+      - ".github/*.yml"
+      - ".gitignore"
       - "LICENSE"
-      - "*.md"
+      - "**/*.md"
   pull_request:
     paths-ignore:
+      - ".github/*.yml"
+      - ".gitignore"
       - "LICENSE"
-      - "*.md"
+      - "**/*.md"
 
 jobs:
   # test-no-arguments:
