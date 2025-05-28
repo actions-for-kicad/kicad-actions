@@ -1,0 +1,19 @@
+---
+schematic_file: "example.sch"
+
+drc-all:
+  type: drc
+  options:
+    output: "drc_all_report.txt"
+    variables:
+      TEST: "example.pcb"
+      TEST2: "example.sch"
+    format: "report"
+    all-track-errors: true
+    schematic-parity: true
+    units: mm
+    severity-all: true
+    severity-error: true
+    severity-warning: true
+    severity-exclusions: true
+    exit-code-violations: true

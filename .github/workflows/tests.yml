@@ -355,15 +355,16 @@ jobs:
       - name: Run KiCad actions
         uses: ./
         with:
-          schematic_file_name: tests/kicad-project-success/kicad-project.kicad_sch
-          symbol_libraries: test-sym-library=tests/kicad-project-success/test-sym-library.kicad_sym
-          run_erc: true
-          schematic_output_pdf: true
+          input_file: yaml_input.yml
+          # schematic_file_name: tests/kicad-project-success/kicad-project.kicad_sch
+          # symbol_libraries: test-sym-library=tests/kicad-project-success/test-sym-library.kicad_sym
+          # run_erc: true
+          # schematic_output_pdf: true
 
-          pcb_file_name: tests/kicad-project-success/kicad-project.kicad_pcb
-          footprint_libraries: test-fp-library=tests/kicad-project-success/test-fp-library.pretty
-          run_drc: true
-          pcb_output_gerbers_and_drill: true
+          # pcb_file_name: tests/kicad-project-success/kicad-project.kicad_pcb
+          # footprint_libraries: test-fp-library=tests/kicad-project-success/test-fp-library.pretty
+          # run_drc: true
+          # pcb_output_gerbers_and_drill: true
 
       - name: Upload schematic
         uses: actions/upload-artifact@v4
