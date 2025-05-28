@@ -5,6 +5,10 @@ branding:
   color: "green"
 
 inputs:
-  # Input file location
+  # YAML input file
   input_file:
-    description: "The YAML input file containing the generate information."
+    description: "Path to the YAML input file"
+
+runs:
+  using: "docker"
+  image: "Dockerfile"
