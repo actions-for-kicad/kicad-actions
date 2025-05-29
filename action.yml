@@ -8,6 +8,12 @@ inputs:
   # YAML input file
   input_file:
     description: "Path to the YAML input file"
+    required: false
+
+  # YAML input
+  input:
+    description: "Raw YAML input"
+    required: false
 
 runs:
   using: "docker"

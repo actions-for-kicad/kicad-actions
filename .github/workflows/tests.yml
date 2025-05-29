@@ -364,7 +364,7 @@ jobs:
 
             jobs:
               erc:
-                type: erc
+                type: drc
           # schematic_file_name: tests/kicad-project-success/kicad-project.kicad_sch
           # symbol_libraries: test-sym-library=tests/kicad-project-success/test-sym-library.kicad_sym
           # run_erc: true
