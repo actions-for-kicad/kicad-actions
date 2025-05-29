@@ -1,0 +1,105 @@
+---
+drc:
+  type: command
+  command: pcb drc
+
+  arguments:
+    pcb_file:
+      position: 0
+      type: string
+      required: true
+
+    output:
+      type: string
+      required: false
+
+    variables:
+      type: map
+      required: false
+
+    format:
+      type: string
+      required: false
+      options:
+        - report
+        - json
+
+    all-track-errors:
+      type: boolean
+      required: false
+
+    schematic-parity:
+      type: boolean
+      required: false
+
+    units:
+      type: string
+      required: false
+      options:
+        - mm
+        - in
+        - mils
+
+    severity-all:
+      type: boolean
+      required: false
+
+    severity-error:
+      type: boolean
+      required: false
+
+    severity-warning:
+      type: boolean
+      required: false
+
+    severity-exclusions:
+      type: boolean
+      required: false
+
+    exit-code-violations:
+      type: boolean
+      required: false
+
+gencad:
+  type: command
+  command: pcb export gencad
+  arguments:
+    pcb_file:
+      position: 0
+      type: string
+      required: true
+
+    output:
+      type: string
+      required: false
+
+    variables:
+      type: map
+      required: false
+
+    flip-bottom-pads:
+      type: boolean
+      required: false
+
+    unique-pins:
+      type: boolean
+      required: false
+
+    unique-footprints:
+      type: boolean
+      required: false
+
+    use-drill-origin:
+      type: boolean
+      required: false
+
+    store-origin-coord:
+      type: boolean
+      required: false
+
+3d-animation:
+  type: custom
+  arguments:
+    pcb_file:
+      type: string
+      required: true

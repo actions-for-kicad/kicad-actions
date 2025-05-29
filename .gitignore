@@ -1,6 +1,12 @@
 # MacOS files
 .DS_Store
 
+# Python files
+__pycache__
+*.py[cod]
+*.pyo
+*.pyd
+
 # Kicad files
 kicad-project-backups
 fp-info-cache
