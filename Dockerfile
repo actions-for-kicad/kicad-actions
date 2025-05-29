@@ -3,7 +3,8 @@ FROM python:3-slim
 
 USER root
 
-COPY entrypoint.sh /entrypoint.sh
+COPY src /src
+COPY main.py /main.py
 
 RUN pip install PyYaml
 

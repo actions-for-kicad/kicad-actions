@@ -355,7 +355,16 @@ jobs:
       - name: Run KiCad actions
         uses: ./
         with:
-          input_file: yaml_input.yml
+          # input_file: yaml_input.yml
+
+          input: |
+            defaults:
+              pcb_file: "tests/kicad-project-success/kicad-project.kicad_pcb"
+              schematic_file: "tests/kicad-project-success/kicad-project.kicad_sch"
+
+            jobs:
+              erc:
+                type: erc
           # schematic_file_name: tests/kicad-project-success/kicad-project.kicad_sch
           # symbol_libraries: test-sym-library=tests/kicad-project-success/test-sym-library.kicad_sym
           # run_erc: true

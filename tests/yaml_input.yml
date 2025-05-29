@@ -1,0 +1,29 @@
+---
+defaults:
+  pcb_file: "test.pcb"
+
+jobs:
+  drc-all:
+    type: drc
+    arguments:
+      pcb_file: "example.pcb"
+      output: "drc_all_report.txt"
+      variables:
+        TEST: "example.pcb"
+        TEST2: "example.sch"
+      format: "report"
+
+  drc-partly:
+    type: drc
+    arguments:
+      pcb_file: "example.pcb"
+      severity-all: false
+      severity-error: false
+      severity-warning: lsakdjf;s
+      severity-exclusions: false
+      exit-code-violations: false
+
+  gencad-export:
+    type: gencad
+    arguments:
+      unique_pins: true
