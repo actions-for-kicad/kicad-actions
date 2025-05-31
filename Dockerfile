@@ -1,5 +1,5 @@
-FROM kicad/kicad:9.0
 FROM python:3-slim
+FROM kicad/kicad:9.0
 
 USER root
 
