@@ -388,3 +388,10 @@ jobs:
           name: Gerbers
           path: ./gerbers
           if-no-files-found: error
+
+      - name: Upload image render
+        uses: actions/upload-artifact@v4
+        with:
+          name: Image render
+          path: ./pcb.png
+          if-no-files-found: error

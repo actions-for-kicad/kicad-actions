@@ -306,6 +306,47 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
       --output "$INPUT_PCB_OUTPUT_STEP_FILE_NAME" \
       "$INPUT_PCB_FILE_NAME"
   fi
+
+  # Export PCB image render
+  if [[ $INPUT_PCB_OUTPUT_IMAGE == "true" ]]; then
+    # Check if the file name ends with .png, .jpg, or .jpeg
+    if [[ ! $INPUT_PCB_OUTPUT_IMAGE_FILE_NAME =~ \.(png|jpg|jpeg)$ ]]; then
+      echo "::error::Invalid image file name. Make sour your image file name ends with '.png', '.jpg', or '.jpeg'."
+      exit 1
+    fi
+
+    # Check if the side is valid (top, bottom, left, right, front or back)
+    if [[ $INPUT_PCB_OUTPUT_IMAGE_SIDE != "top" && $INPUT_PCB_OUTPUT_IMAGE_SIDE != "bottom" && $INPUT_PCB_OUTPUT_IMAGE_SIDE != "left" && $INPUT_PCB_OUTPUT_IMAGE_SIDE != "right" && $INPUT_PCB_OUTPUT_IMAGE_SIDE != "front" && $INPUT_PCB_OUTPUT_IMAGE_SIDE != "back" ]]; then
+      echo "::error::Invalid image side. Supported sides are 'top', 'bottom', 'left', 'right', 'front' or 'back'."
+      exit 1
+    fi
+
+    # Check if the background is valid (default, transparent, opaque)
+    if [[ $INPUT_PCB_OUTPUT_IMAGE_BACKGROUND != "default" && $INPUT_PCB_OUTPUT_IMAGE_BACKGROUND != "transparent" && $INPUT_PCB_OUTPUT_IMAGE_BACKGROUND != "opaque" ]]; then
+      echo "::error::Invalid image background. Supported backgrounds are 'default', 'transparent' or 'opaque'."
+      exit 1
+    fi
+
+    # Check if the width and height are valid integers
+    if ! [[ $INPUT_PCB_OUTPUT_IMAGE_WIDTH =~ ^[0-9]+$ ]]; then
+      echo "::error::Invalid image width. Make sure your image width is a valid integer."
+      exit 1
+    fi
+    if ! [[ $INPUT_PCB_OUTPUT_IMAGE_HEIGHT =~ ^[0-9]+$ ]]; then
+      echo "::error::Invalid image height. Make sure your image height is a valid integer."
+      exit 1
+    fi
+
+    cmd=(kicad-cli pcb render \
+      --output "$INPUT_PCB_OUTPUT_IMAGE_FILE_NAME" \
+      --side "$INPUT_PCB_OUTPUT_IMAGE_SIDE" \
+      --background "$INPUT_PCB_OUTPUT_IMAGE_BACKGROUND" \
+      --width "$INPUT_PCB_OUTPUT_IMAGE_WIDTH" \
+      --height "$INPUT_PCB_OUTPUT_IMAGE_HEIGHT" \
+    )
+    [[ -n $INPUT_PCB_OUTPUT_IMAGE_FLOOR ]] && cmd+=(--floor)
+    "${cmd[@]}" "$INPUT_PCB_FILE_NAME"
+  fi
 fi
 
 # Return non-zero exit code for ERC or DRC violations
