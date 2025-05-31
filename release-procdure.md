@@ -7,13 +7,13 @@ Within this document the release procedure is noted down for creating a new rele
 1. Create a new tag by running the following command.
 
 ```sh
-git tag vX.X
+git tag vX.Y
 ```
 
 2. Push all tags by running the following command.
 
 ```sh
-git push origin tag vX.X
+git push origin tag vX.Y
 ```
 
-Where `X.X` is the version in both commands, for example `1.0`.
+Where `X.Y` is the version in both commands, for example `1.0`.

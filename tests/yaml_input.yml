@@ -1,0 +1,30 @@
+---
+defaults:
+  pcb_file: "test.pcb"
+
+jobs:
+  drc-all:
+    type: drc
+    arguments:
+      pcb_file: "example.pcb"
+      output: "drc_all_report.txt"
+      define-var:
+        TEST: "example.pcb"
+        TEST2: "example.sch"
+      format: "report"
+
+  drc-partly:
+    type: drc
+    arguments:
+      pcb_file: "example.pcb"
+      exit-code-violations: true
+
+  gencad-export:
+    type: gencad
+    arguments:
+      unique_pins: true
+
+  pcb-export:
+    type: gerbers-drill
+    arguments:
+      pcb_file: "example.pcb"
