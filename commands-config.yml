@@ -1,0 +1,209 @@
+---
+drc:
+  type: command
+  command: pcb drc
+
+  arguments:
+    pcb_file:
+      position: 0
+      type: string
+      required: true
+
+    output:
+      type: string
+      required: false
+
+    define-var:
+      type: map
+      required: false
+
+    format:
+      type: string
+      required: false
+      options:
+        - report
+        - json
+
+    all-track-errors:
+      type: boolean
+      required: false
+
+    schematic-parity:
+      type: boolean
+      required: false
+
+    units:
+      type: string
+      required: false
+      options:
+        - mm
+        - in
+        - mils
+
+    severity-all:
+      type: boolean
+      required: false
+
+    severity-error:
+      type: boolean
+      required: false
+
+    severity-warning:
+      type: boolean
+      required: false
+
+    severity-exclusions:
+      type: boolean
+      required: false
+
+    exit-code-violations:
+      type: boolean
+      required: false
+
+gencad:
+  type: command
+  command: pcb export gencad
+  arguments:
+    pcb_file:
+      position: 0
+      type: string
+      required: true
+
+    output:
+      type: string
+      required: false
+
+    define-var:
+      type: map
+      required: false
+
+    flip-bottom-pads:
+      type: boolean
+      required: false
+
+    unique-pins:
+      type: boolean
+      required: false
+
+    unique-footprints:
+      type: boolean
+      required: false
+
+    use-drill-origin:
+      type: boolean
+      required: false
+
+    store-origin-coord:
+      type: boolean
+      required: false
+
+gerbers-drill:
+  type: multiple
+  commands:
+    - drill
+    - gerbers
+
+gerbers:
+  type: command
+  command: pcb export gerbers
+
+  arguments:
+    pcb_file:
+      position: 0
+      type: string
+      required: true
+
+    output:
+      type: string
+      required: false
+
+drill:
+  type: command
+  command: pcb export drill
+
+  arguments:
+    pcb_file:
+      position: 0
+      type: string
+      required: true
+
+    output:
+      type: string
+      required: false
+
+    format:
+      type: string
+      required: false
+      options:
+        - gerber
+        - excellon
+
+    drill-origin:
+      type: string
+      required: false
+      options:
+        - absolute
+        - plot
+
+    excellon-zeros-format:
+      type: string
+      required: false
+      options:
+        - decimal
+        - suppressleading
+        - suppresstrailing
+        - keep
+
+    excellon-oval-format:
+      type: string
+      required: false
+      options:
+        - round
+        - alternate
+
+    excellon-units:
+      type: string
+      required: false
+      options:
+        - mm
+        - in
+
+    excellon-mirror-y:
+      type: boolean
+      required: false
+
+    excellon-min-header:
+      type: boolean
+      required: false
+
+    excellon-separate-th:
+      type: boolean
+      required: false
+
+    generate-map:
+      type: boolean
+      required: false
+
+    map-format:
+      type: string
+      required: false
+      options:
+        - pdf
+        - gerberx2
+        - ps
+        - dxf
+        - svg
+
+    gerber-percision:
+      type: int
+      required: false
+      options:
+        - 5
+        - 6
+
+3d-animation:
+  type: custom
+  arguments:
+    pcb_file:
+      type: string
+      required: true
