@@ -182,7 +182,7 @@ def run_jobs(input_yaml: dict, schema_yaml: dict) -> None:
 
 if __name__ == "__main__":
     # Use shell=True if you're using shell features like wildcards, pipes, etc.
-    result = run('ls -l | grep py', shell=True, capture_output=True, text=True)
+    result = run('kicad-cli --version', shell=True, capture_output=True, text=True)
 
     print("STDOUT:", result.stdout)
     print("STDERR:", result.stderr)
