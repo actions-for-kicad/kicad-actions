@@ -5,7 +5,7 @@ USER root
 
 COPY run.py /run.py
 
-RUN apt install python3 python3-pip
+RUN apt-get install python3 python3-pip
 RUN pip install PyYaml
 
 CMD ["kicad-cli"]
