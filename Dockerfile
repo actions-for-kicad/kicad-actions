@@ -7,4 +7,6 @@ COPY run.py /run.py
 
 RUN pip install PyYaml
 
-CMD ["python", "run.py"]
+CMD ["kicad-cli"]
+
+# CMD ["python", "run.py"]
