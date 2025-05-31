@@ -3,8 +3,8 @@ FROM python:3-slim
 
 USER root
 
-COPY script.py /script.py
+COPY run.py /run.py
 
 RUN pip install PyYaml
 
-CMD ["python", "script.py"]
+CMD ["python", "run.py"]
