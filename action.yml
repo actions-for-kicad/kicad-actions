@@ -127,6 +127,10 @@ inputs:
     description: "Format of the drill file. Options: 'excellon', 'gerber'."
     default: "excellon"
 
+  pcb_output_drill_split:
+    description: "Split drill file into plated and non-plated counterparts."
+    default: false
+
   # PCB gerbers output
   pcb_output_gerbers:
     description: "Run the gerber export of the PCB."

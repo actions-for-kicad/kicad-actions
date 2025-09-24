@@ -262,6 +262,14 @@ jobs:
           - test_name: drill-excellon
             output_flag: pcb_output_drill
             expected_files: drill/kicad-project.drl
+          - test_name: drill-excellon-split
+            output_flag: pcb_output_drill
+            pcb_output_drill_split: true
+            expected_files: |
+              "drill/kicad-project-PTH.drl"
+              "drill/kicad-project-NPTH.drl"
+              "drill/kicad-project-PTH-drl_map.gbr"
+              "drill/kicad-project-NPTH-drl_map.gbr"
           - test_name: drill-gerber
             output_flag: pcb_output_drill
             expected_files: |
@@ -359,6 +367,7 @@ jobs:
           footprint_libraries: "test-fp-library=tests/kicad-project-success/test-fp-library.pretty"
           ${{ matrix.output_flag }}: true
           pcb_output_drill_format: ${{ matrix.pcb_output_drill_format || 'excellon' }}
+          pcb_output_drill_split: ${{ matrix.pcb_output_drill_split || false }}
           pcb_output_layers: ${{ matrix.pcb_output_layers || null }}
           pcb_output_black_white: ${{ matrix.pcb_output_black_white || false }}
           pcb_output_pos_format: ${{ matrix.pcb_output_pos_format || 'ascii' }}
