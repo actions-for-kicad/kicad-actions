@@ -66,10 +66,10 @@ jobs:
 
           # Testing
           echo "Testing"
-          echo "gh issue list --state open"
-          echo "gh issue list --state open --search \"$title\""
-          echo "gh issue list --state open --search \"$title\"" --json number,title
-          echo "gh issue list --state open --search \"$title\"" --json number,title | jq -r '.[] | select(.title == "'"$title"'") | .number'
+          gh issue list --state open
+          gh issue list --state open --search "$title"
+          gh issue list --state open --search "$title" --json number,title
+          gh issue list --state open --search "$title" --json number,title | jq -r '.[] | select(.title == "'"$title"'") | .number'
 
           issue_number=$(gh issue list --state open --search "$title" --json number,title | jq -r '.[] | select(.title == "'"$title"'") | .number')
 
