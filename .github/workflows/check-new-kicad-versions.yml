@@ -75,10 +75,10 @@ jobs:
 
           if [ -n "$issue_number" ]; then
             echo "Updating existing issue #$issue_number"
-            gh issue edit "$issue_number" --body "$body"
+            # gh issue edit "$issue_number" --body "$body"
           else
             echo "Creating new issue"
-            gh issue create --title "$title" --body "$body" --label "update" --assignee Nick-v-L
+            # gh issue create --title "$title" --body "$body" --label "update" --assignee Nick-v-L
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
