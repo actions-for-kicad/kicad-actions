@@ -305,10 +305,10 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
     kicad-cli pcb export step \
       --output "$INPUT_PCB_OUTPUT_STEP_FILE_NAME" \
       "$INPUT_PCB_FILE_NAME"
-    # Due to a bug in the PCB step export, the exit code is always 2, even on success
-    step_failure=$?
-    if [[ $step_failure -ne 0 && $step_failure -ne 2 ]]; then
-      echo "::error::Failed to export PCB STEP file."
+    pcb_step_failure=$?
+    # kicad-cli returns 2 on success due to a bug, so only fail if not 0 or 2
+    if [[ $pcb_step_failure -ne 0 && $pcb_step_failure -ne 2 ]]; then
+      echo "::error::Failed to export PCB STEP file. Exit code: $pcb_step_failure"
       exit 1
     fi
   fi
