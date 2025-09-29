@@ -63,6 +63,14 @@ jobs:
           body="New KiCad docker version(s) are available:<br>\`$(cat missing_versions.txt)\`<br><br>Please update the \`kicad_version\` array in \`.github/workflows/build-kicad-versions.yml\` accordingly."
 
           # Try to find an open issue with the same title
+
+          # Testing
+          echo "Testing"
+          echo "gh issue list --state open"
+          echo "gh issue list --state open --search \"$title\""
+          echo "gh issue list --state open --search \"$title\"" --json number,title
+          echo "gh issue list --state open --search \"$title\"" --json number,title | jq -r '.[] | select(.title == "'"$title"'") | .number'
+
           issue_number=$(gh issue list --state open --search "$title" --json number,title | jq -r '.[] | select(.title == "'"$title"'") | .number')
 
           if [ -n "$issue_number" ]; then
