@@ -59,32 +59,18 @@ jobs:
       - name: Create GitHub issue if new versions found
         if: steps.compare.outputs.has_new_versions == 'true'
         run: |
-          title="New KiCad version(s) detected"
+          title="New KiCad version detected"
           body="New KiCad docker version(s) are available:<br>\`$(cat missing_versions.txt)\`<br><br>Please update the \`kicad_version\` array in \`.github/workflows/build-kicad-versions.yml\` accordingly."
 
           # Try to find an open issue with the same title
-
-          # Testing
-          echo "Testing"
-          gh issue list --state open
-
-          echo "Testing2"
-          gh issue list --state open --search "$title"
-
-          echo "Testing3"
-          gh issue list --state open --search "$title" --json number,title
-
-          echo "Testing4"
-          gh issue list --state open --search "$title" --json number,title | jq -r '.[] | select(.title == "'"$title"'") | .number'
-
-          issue_number=$(gh issue list --state open --search "$title" --json number,title | jq -r '.[] | select(.title == "'"$title"'") | .number')
+          issue_number=$(gh issue list --state open --search "$title in:title" --json number,title | jq -r '.[] | select(.title == "'"$title"'") | .number')
 
           if [ -n "$issue_number" ]; then
             echo "Updating existing issue #$issue_number"
-            # gh issue edit "$issue_number" --body "$body"
+            gh issue edit "$issue_number" --body "$body"
           else
             echo "Creating new issue"
-            # gh issue create --title "$title" --body "$body" --label "update" --assignee Nick-v-L
+            gh issue create --title "$title" --body "$body" --label "update" --assignee Nick-v-L
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
