@@ -302,9 +302,17 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
 
   # Export PCB STEP
   if [[ $INPUT_PCB_OUTPUT_STEP == "true" ]]; then
+    set +e
     kicad-cli pcb export step \
       --output "$INPUT_PCB_OUTPUT_STEP_FILE_NAME" \
       "$INPUT_PCB_FILE_NAME"
+    pcb_step_failure=$?
+    set -e
+    # kicad-cli returns 2 on success due to a bug, so only fail if not 0 or 2
+    if [[ $pcb_step_failure -ne 0 && $pcb_step_failure -ne 2 ]]; then
+      echo "::error::Failed to export PCB STEP file. Exit code: $pcb_step_failure"
+      exit 1
+    fi
   fi
 
   # Export PCB image render
