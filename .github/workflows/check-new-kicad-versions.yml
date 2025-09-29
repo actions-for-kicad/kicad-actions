@@ -67,8 +67,14 @@ jobs:
           # Testing
           echo "Testing"
           gh issue list --state open
+
+          echo "Testing2"
           gh issue list --state open --search "$title"
+
+          echo "Testing3"
           gh issue list --state open --search "$title" --json number,title
+
+          echo "Testing4"
           gh issue list --state open --search "$title" --json number,title | jq -r '.[] | select(.title == "'"$title"'") | .number'
 
           issue_number=$(gh issue list --state open --search "$title" --json number,title | jq -r '.[] | select(.title == "'"$title"'") | .number')
