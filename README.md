@@ -263,6 +263,14 @@ Description: Format of the drill file. Options:
 - `excellon`
 - `gerber`
 
+## `pcb_output_drill_split`
+
+Required: `false`\
+Default: `false`\
+\
+Description: Only used for `excellon` drill format. When `true` tells
+`kicad-cli` to split plated and non-plated holes into dedicated filed.
+
 ## `pcb_output_gerbers`
 
 Required: `false`\

@@ -207,15 +207,30 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
 
   # Export PCB drill
   if [[ $INPUT_PCB_OUTPUT_DRILL == "true" ]]; then
-    if [[ $INPUT_PCB_OUTPUT_DRILL_FORMAT != "excellon" && $INPUT_PCB_OUTPUT_DRILL_FORMAT != "gerber" ]]; then
+    if [[ $INPUT_PCB_OUTPUT_DRILL_FORMAT == "excellon" ]]; then
+      if [[ $INPUT_PCB_OUTPUT_DRILL_SPLIT == "true" ]]; then
+        kicad-cli pcb export drill \
+                  --excellon-separate-th --generate-map --map-format gerberx2 \
+                  --output "$INPUT_PCB_OUTPUT_DRILL_FOLDER_NAME" \
+                  --format "$INPUT_PCB_OUTPUT_DRILL_FORMAT" \
+                  "$INPUT_PCB_FILE_NAME"
+      else
+        kicad-cli pcb export drill \
+                  --generate-map --map-format gerberx2 \
+                  --output "$INPUT_PCB_OUTPUT_DRILL_FOLDER_NAME" \
+                  --format "$INPUT_PCB_OUTPUT_DRILL_FORMAT" \
+                  "$INPUT_PCB_FILE_NAME"
+      fi
+    elif [[ $INPUT_PCB_OUTPUT_DRILL_FORMAT == "gerber" ]]; then
+      kicad-cli pcb export drill \
+        --generate-map --map-format gerberx2 \
+        --output "$INPUT_PCB_OUTPUT_DRILL_FOLDER_NAME" \
+        --format "$INPUT_PCB_OUTPUT_DRILL_FORMAT" \
+        "$INPUT_PCB_FILE_NAME"
+    else
       echo "::error::Invalid drill format. Supported formats are 'excellon' and 'gerber'."
       exit 1
     fi
-
-    kicad-cli pcb export drill \
-      --output "$INPUT_PCB_OUTPUT_DRILL_FOLDER_NAME" \
-      --format "$INPUT_PCB_OUTPUT_DRILL_FORMAT" \
-      "$INPUT_PCB_FILE_NAME"
   fi
 
   # Export PCB gerbers
@@ -231,10 +246,18 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
     [[ -n $INPUT_PCB_OUTPUT_LAYERS ]] && cmd+=(--layers "$INPUT_PCB_OUTPUT_LAYERS")
     "${cmd[@]}" "$INPUT_PCB_FILE_NAME"
 
-    kicad-cli pcb export drill \
-      --output "$INPUT_PCB_OUTPUT_GERBERS_AND_DRILL_FOLDER_NAME" \
-      --format "$INPUT_PCB_OUTPUT_DRILL_FORMAT" \
-      "$INPUT_PCB_FILE_NAME"
+    if [[ $INPUT_PCB_OUTPUT_DRILL_SPLIT == "true" ]]; then
+      kicad-cli pcb export drill \
+        --excellon-separate-th --generate-map --map-format gerberx2 \
+        --output "$INPUT_PCB_OUTPUT_GERBERS_AND_DRILL_FOLDER_NAME" \
+        --format "$INPUT_PCB_OUTPUT_DRILL_FORMAT" \
+        "$INPUT_PCB_FILE_NAME"
+    else
+      kicad-cli pcb export drill \
+        --output "$INPUT_PCB_OUTPUT_GERBERS_AND_DRILL_FOLDER_NAME" \
+        --format "$INPUT_PCB_OUTPUT_DRILL_FORMAT" \
+        "$INPUT_PCB_FILE_NAME"
+    fi
   fi
 
   # Export PCB DXF
