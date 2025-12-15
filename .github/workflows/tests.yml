@@ -410,21 +410,21 @@ jobs:
           pcb_output_image: true
 
       - name: Upload schematic
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: Schematic
           path: ./schematic.pdf
           if-no-files-found: error
 
       - name: Upload gerbers and drill file
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: Gerbers
           path: ./gerbers
           if-no-files-found: error
 
       - name: Upload image render
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: Image render
           path: ./pcb.png
