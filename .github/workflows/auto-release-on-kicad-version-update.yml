@@ -5,7 +5,7 @@ on:
     branches:
       - Nick-v-L/issue52
     paths:
-      - '.github/workflows/build-kicad-versions.yml'
+      - ".github/workflows/build-kicad-versions.yml"
 
 jobs:
   detect-and-release:
@@ -22,9 +22,9 @@ jobs:
           if ! git show HEAD~1:.github/workflows/build-kicad-versions.yml > /tmp/build-kicad-versions-prev.yml 2>/dev/null; then
             # If there's no previous commit, assume empty previous versions
             echo 'matrix:
-  kicad_version: []' > /tmp/build-kicad-versions-prev.yml
+            kicad_version: []' > /tmp/build-kicad-versions-prev.yml
           fi
-          
+
       - name: Extract KiCad versions from current and previous
         id: extract_versions
         run: |
@@ -54,7 +54,7 @@ jobs:
 
           # Find new versions
           comm -23 /tmp/current_versions.txt /tmp/previous_versions.txt > /tmp/new_versions.txt
-          
+
           echo "Current versions:"
           cat /tmp/current_versions.txt
           echo ""
@@ -69,11 +69,11 @@ jobs:
         run: |
           # Get the latest version tag from the main branch
           latest_tag=$(git tag -l 'v[0-9]*.[0-9]*' --sort=-version:refname | head -n 1 | sed 's/^v//')
-          
+
           if [ -z "$latest_tag" ]; then
             echo "No version tags found, using 1.0"
             latest_tag="1.0"
           fi
-          
+
           echo "latest_version=$latest_tag" >> $GITHUB_OUTPUT
           echo "Latest version: $latest_tag"
