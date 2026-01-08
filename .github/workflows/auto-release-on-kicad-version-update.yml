@@ -68,7 +68,7 @@ jobs:
         id: latest_version
         run: |
           # Get the latest version tag from the main branch
-          latest_tag=$(git tag -l 'v[0-9]*.[0-9]*' --sort=-version:refname | head -n 1 | sed 's/^v//')
+          latest_tag=$(git tag -l 'v\d(?:\.\d+){0,2}(?:-k9(?:\.\d+){0,2})' --sort=-version:refname | head -n 1 | sed 's/^v//')
 
           if [ -z "$latest_tag" ]; then
             echo "No version tags found, using 1.0"
