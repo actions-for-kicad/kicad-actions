@@ -19,16 +19,10 @@ jobs:
       - name: Fetch current KiCad versions from matrix
         id: repo_versions
         run: |
-          awk '
-            /matrix:/ {in_matrix=1}
-            in_matrix && /kicad_version:/ {
-              match($0, /\[.*\]/, arr)
-              gsub(/["\[\] ]/, "", arr[0])
-              gsub(/,/, "\n", arr[0])
-              print arr[0]
-              exit
-            }
-          ' .github/workflows/build-kicad-versions.yml > repo_versions.txt
+          grep -Pzo 'matrix:\s*(?:.|\n)*?kicad_version:\s*\[\K[^\]]+' \
+            .github/workflows/build-kicad-versions.yml |
+          tr -d '\n' |
+          sed 's/[" ]//g; s/,/\n/g' > repo_versions.txt
 
           echo "Current KiCad versions in repo:"
           cat repo_versions.txt

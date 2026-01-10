@@ -6,6 +6,6 @@ kicad-project-backups
 fp-info-cache
 *.bak
 *.rpt
-*.kicad_pcb.lck
+*.kicad_*.lck
 sym-lib-table
 fp-lib-table
