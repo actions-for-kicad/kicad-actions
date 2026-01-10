@@ -21,6 +21,7 @@ jobs:
         run: |
           grep -Pzo 'matrix:\s*(?:.|\n)*?kicad_version:\s*\[\K[^\]]+' \
             .github/workflows/build-kicad-versions.yml |
+          tr -d '\n' |
           sed 's/[" ]//g; s/,/\n/g' > repo_versions.txt
 
           echo "Current KiCad versions in repo:"
