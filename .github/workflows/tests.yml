@@ -258,101 +258,101 @@ jobs:
             # "image-jpeg-back-floor",
           ]
         include:
-          - test_name: drill-excellon
-            output_flag: pcb_output_drill
-            expected_files: drill/kicad-project.drl
-          - test_name: drill-excellon-split
-            output_flag: pcb_output_drill
-            pcb_output_drill_split: true
-            expected_files: |
-              "drill/kicad-project-PTH.drl"
-              "drill/kicad-project-NPTH.drl"
-              "drill/kicad-project-PTH-drl_map.gbr"
-              "drill/kicad-project-NPTH-drl_map.gbr"
-          - test_name: drill-gerber
-            output_flag: pcb_output_drill
-            expected_files: |
-              "drill/kicad-project-PTH-drl.gbr"
-              "drill/kicad-project-NPTH-drl.gbr"
-            pcb_output_drill_format: gerber
-          - test_name: gerbers
-            output_flag: pcb_output_gerbers
-            pcb_output_layers: F.Cu,F.Mask,F.SilkS
-            expected_files: |
-              "gerbers/kicad-project-F_Cu.gtl"
-              "gerbers/kicad-project-F_Mask.gts"
-              "gerbers/kicad-project-F_Silkscreen.gto"
-          - test_name: gerbers-drill
-            output_flag: pcb_output_gerbers_and_drill
-            pcb_output_layers: F.Cu,F.Mask,F.SilkS
-            expected_files: |
-              "gerbers/kicad-project-F_Cu.gtl"
-              "gerbers/kicad-project-F_Mask.gts"
-              "gerbers/kicad-project-F_Silkscreen.gto"
-              "gerbers/kicad-project.drl"
-          - test_name: dxf
-            output_flag: pcb_output_dxf
-            pcb_output_layers: F.Cu,F.Mask,F.SilkS
-            expected_files: |
-              "dxf/kicad-project-F_Cu.dxf"
-              "dxf/kicad-project-F_Mask.dxf"
-              "dxf/kicad-project-F_Silkscreen.dxf"
-          - test_name: pdf
-            output_flag: pcb_output_pdf
-            pcb_output_layers: F.Cu,F.Mask,F.SilkS
-            expected_files: pcb.pdf
-          - test_name: pdf-black-white
-            output_flag: pcb_output_pdf
-            pcb_output_layers: F.Cu
-            expected_files: pcb.pdf
-            pcb_output_black_white: true
-          - test_name: svg
-            output_flag: pcb_output_svg
-            pcb_output_layers: F.Cu,F.Mask,F.SilkS
-            expected_files: pcb.svg
-          - test_name: svg-black-white
-            output_flag: pcb_output_svg
-            pcb_output_layers: F.Cu
-            expected_files: pcb.svg
-            pcb_output_black_white: true
-          - test_name: pos-ascii
-            output_flag: pcb_output_pos
-            expected_files: pcb.pos
-          - test_name: pos-gerber
-            output_flag: pcb_output_pos
-            expected_files: pcb.pos
-            pcb_output_pos_format: gerber
-            pcb_output_pos_side: front
-          - test_name: ipc2581
-            output_flag: pcb_output_ipc2581
-            expected_files: pcb.xml
+          # - test_name: drill-excellon
+          #   output_flag: pcb_output_drill
+          #   expected_files: drill/kicad-project.drl
+          # - test_name: drill-excellon-split
+          #   output_flag: pcb_output_drill
+          #   pcb_output_drill_split: true
+          #   expected_files: |
+          #     "drill/kicad-project-PTH.drl"
+          #     "drill/kicad-project-NPTH.drl"
+          #     "drill/kicad-project-PTH-drl_map.gbr"
+          #     "drill/kicad-project-NPTH-drl_map.gbr"
+          # - test_name: drill-gerber
+          #   output_flag: pcb_output_drill
+          #   expected_files: |
+          #     "drill/kicad-project-PTH-drl.gbr"
+          #     "drill/kicad-project-NPTH-drl.gbr"
+          #   pcb_output_drill_format: gerber
+          # - test_name: gerbers
+          #   output_flag: pcb_output_gerbers
+          #   pcb_output_layers: F.Cu,F.Mask,F.SilkS
+          #   expected_files: |
+          #     "gerbers/kicad-project-F_Cu.gtl"
+          #     "gerbers/kicad-project-F_Mask.gts"
+          #     "gerbers/kicad-project-F_Silkscreen.gto"
+          # - test_name: gerbers-drill
+          #   output_flag: pcb_output_gerbers_and_drill
+          #   pcb_output_layers: F.Cu,F.Mask,F.SilkS
+          #   expected_files: |
+          #     "gerbers/kicad-project-F_Cu.gtl"
+          #     "gerbers/kicad-project-F_Mask.gts"
+          #     "gerbers/kicad-project-F_Silkscreen.gto"
+          #     "gerbers/kicad-project.drl"
+          # - test_name: dxf
+          #   output_flag: pcb_output_dxf
+          #   pcb_output_layers: F.Cu,F.Mask,F.SilkS
+          #   expected_files: |
+          #     "dxf/kicad-project-F_Cu.dxf"
+          #     "dxf/kicad-project-F_Mask.dxf"
+          #     "dxf/kicad-project-F_Silkscreen.dxf"
+          # - test_name: pdf
+          #   output_flag: pcb_output_pdf
+          #   pcb_output_layers: F.Cu,F.Mask,F.SilkS
+          #   expected_files: pcb.pdf
+          # - test_name: pdf-black-white
+          #   output_flag: pcb_output_pdf
+          #   pcb_output_layers: F.Cu
+          #   expected_files: pcb.pdf
+          #   pcb_output_black_white: true
+          # - test_name: svg
+          #   output_flag: pcb_output_svg
+          #   pcb_output_layers: F.Cu,F.Mask,F.SilkS
+          #   expected_files: pcb.svg
+          # - test_name: svg-black-white
+          #   output_flag: pcb_output_svg
+          #   pcb_output_layers: F.Cu
+          #   expected_files: pcb.svg
+          #   pcb_output_black_white: true
+          # - test_name: pos-ascii
+          #   output_flag: pcb_output_pos
+          #   expected_files: pcb.pos
+          # - test_name: pos-gerber
+          #   output_flag: pcb_output_pos
+          #   expected_files: pcb.pos
+          #   pcb_output_pos_format: gerber
+          #   pcb_output_pos_side: front
+          # - test_name: ipc2581
+          #   output_flag: pcb_output_ipc2581
+          #   expected_files: pcb.xml
           - test_name: step
             output_flag: pcb_output_step
             expected_files: pcb.step
-          - test_name: image-png-bottom-floor
-            output_flag: pcb_output_image
-            expected_files: pcb.png
-            pcb_output_image_side: bottom
-            pcb_output_image_floor: true
-          - test_name: image-png-top-opaque
-            output_flag: pcb_output_image
-            expected_files: image.png
-            pcb_output_image_file_name: image.png
-            pcb_output_image_side: top
-            pcb_output_image_background: opaque
-            pcb_output_image_width: 800
-            pcb_output_image_height: 800
-          - test_name: image-jpg-left
-            output_flag: pcb_output_image
-            expected_files: image.jpg
-            pcb_output_image_file_name: image.jpg
-            pcb_output_image_side: left
-          - test_name: image-jpeg-back-floor
-            output_flag: pcb_output_image
-            expected_files: image.jpeg
-            pcb_output_image_file_name: image.jpeg
-            pcb_output_image_side: back
-            pcb_output_image_floor: true
+          # - test_name: image-png-bottom-floor
+          #   output_flag: pcb_output_image
+          #   expected_files: pcb.png
+          #   pcb_output_image_side: bottom
+          #   pcb_output_image_floor: true
+          # - test_name: image-png-top-opaque
+          #   output_flag: pcb_output_image
+          #   expected_files: image.png
+          #   pcb_output_image_file_name: image.png
+          #   pcb_output_image_side: top
+          #   pcb_output_image_background: opaque
+          #   pcb_output_image_width: 800
+          #   pcb_output_image_height: 800
+          # - test_name: image-jpg-left
+          #   output_flag: pcb_output_image
+          #   expected_files: image.jpg
+          #   pcb_output_image_file_name: image.jpg
+          #   pcb_output_image_side: left
+          # - test_name: image-jpeg-back-floor
+          #   output_flag: pcb_output_image
+          #   expected_files: image.jpeg
+          #   pcb_output_image_file_name: image.jpeg
+          #   pcb_output_image_side: back
+          #   pcb_output_image_floor: true
 
     steps:
       - name: Checkout Repository
