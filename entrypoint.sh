@@ -5,16 +5,6 @@ set -e
 mkdir -p $HOME/.config
 cp -r /home/kicad/.config/kicad $HOME/.config/
 
-echo "3D Model path set to: $KICAD9_3DMODEL_DIR"
-
-# KICAD9_3DMODEL_DIR	/Applications/KiCad/KiCad.app/Contents/SharedSupport/3dmodels/	
-# KICAD9_3RD_PARTY	/Users/nick/Documents/KiCad/9.0/3rdparty/	
-# KICAD9_DESIGN_BLOCK_DIR	/Applications/KiCad/KiCad.app/Contents/SharedSupport/blocks/	
-# KICAD9_FOOTPRINT_DIR	/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints/	
-# KICAD9_SYMBOL_DIR	/Applications/KiCad/KiCad.app/Contents/SharedSupport/symbols/	
-# KICAD9_TEMPLATE_DIR	/Applications/KiCad/KiCad.app/Contents/SharedSupport/template	
-# KICAD_USER_TEMPLATE_DIR	/Users/nick/Documents/KiCad/9.0/template/	
-
 erc_violation=0 # ERC exit code
 drc_violation=0 # DRC exit code
 
@@ -26,6 +16,7 @@ fi
 
 # Check if KiCad version is 8.0 or higher
 kicad_version=$(kicad-cli --version | grep -oP '\d+\.\d+')
+kicad_major_version=$(kicad-cli --version | cut -d. -f1)
 required_version="8.0"
 config_dir="$HOME/.config/kicad/$kicad_version"
 symbol_lib_path="$config_dir/sym-lib-table"
@@ -35,6 +26,13 @@ if [ "$(printf '%s\n' "$required_version" "$kicad_version" | sort -V | head -n1)
     echo "::error::KiCad version 8.0 or higher is required."
     exit 1
 fi
+
+# Set KiCad environment variables
+export KICAD${kicad_major_version}_3DMODEL_DIR="/usr/share/kicad/3dmodels/"
+export KICAD${kicad_major_version}_DESIGN_BLOCK_DIR="/usr/share/kicad/blocks/"
+export KICAD${kicad_major_version}_FOOTPRINT_DIR="/usr/share/kicad/footprints/"
+export KICAD${kicad_major_version}_SYMBOL_DIR="/usr/share/kicad/symbols/"
+export KICAD${kicad_major_version}_TEMPLATE_DIR="/usr/share/kicad/template"
 
 # Define functions for input libraries
 # Function to add symbol library
