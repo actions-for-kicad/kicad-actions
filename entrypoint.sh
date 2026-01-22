@@ -5,6 +5,8 @@ set -e
 mkdir -p $HOME/.config
 cp -r /home/kicad/.config/kicad $HOME/.config/
 
+echo "3D Model path set to: $KICAD8_3DMODEL_DIR"
+
 erc_violation=0 # ERC exit code
 drc_violation=0 # DRC exit code
 
