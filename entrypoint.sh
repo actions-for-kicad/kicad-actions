@@ -40,6 +40,7 @@ export KICAD9_SYMBOL_DIR="/usr/share/kicad/symbols/"
 export KICAD9_TEMPLATE_DIR="/usr/share/kicad/template"
 
 echo "KiCad env $KICAD9_3DMODEL_DIR"
+ls $KICAD9_3DMODEL_DIR
 
 # Define functions for input libraries
 # Function to add symbol library
