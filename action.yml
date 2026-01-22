@@ -247,6 +247,22 @@ inputs:
     description: "Enables floor, shadows and post-processing."
     default: false
 
+  pcb_output_image_perspective:
+    description: "Enables perspective view."
+    default: false
+
+  pcb_output_image_quality:
+    description: "Quality of the image PCB. Options: 'default', 'high', 'user'."
+    default: "default"
+
+  pcb_output_image_zoom:
+    description: "Zoom factor of the image PCB."
+    default: "1.0"
+
+  pcb_output_image_rotate:
+    description: "Rotation of the image PCB. Format: 'x,y,z'."
+    default: "0,0,0"
+
 runs:
   using: "docker"
   image: "Dockerfile"

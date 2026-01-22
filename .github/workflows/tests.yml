@@ -257,6 +257,8 @@ jobs:
             "image-png-top-opaque",
             "image-jpg-left",
             "image-jpeg-back-floor",
+            "image-png-quality-zoom",
+            "image-png-perspective-rotate",
           ]
         include:
           - test_name: drill-excellon
@@ -354,6 +356,18 @@ jobs:
             pcb_output_image_file_name: image.jpeg
             pcb_output_image_side: back
             pcb_output_image_floor: true
+          - test_name: image-png-quality-zoom
+            output_flag: pcb_output_image
+            expected_files: image.png
+            pcb_output_image_file_name: image.png
+            pcb_output_image_quality: "high"
+            pcb_output_image_zoom: 0.5
+          - test_name: image-png-perspective-rotate
+            output_flag: pcb_output_image
+            expected_files: image.png
+            pcb_output_image_file_name: image.png
+            pcb_output_image_perspective: true
+            pcb_output_image_rotate: "310,5,20"
 
     steps:
       - name: Checkout Repository

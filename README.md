@@ -482,6 +482,38 @@ Default: `false`\
 \
 Description: Enables floor, shadows and post-processing.
 
+## `pcb_output_image_perspective`
+
+Required: `false`\
+Default: `false`\
+\
+Description: Enables perspective view.
+
+## `pcb_output_image_quality`
+
+Required: `false`\
+Default: `default`\
+\
+Description: Quality of the image PCB. Options:
+
+- `default`
+- `high`
+- `user`
+
+## `pcb_output_image_zoom`
+
+Required: `false`\
+Default: `1.0`\
+\
+Description: Zoom factor of the image PCB.
+
+## `pcb_output_image_rotate`
+
+Required: `false`\
+Default: `0,0,0`\
+\
+Description: "Rotation of the image PCB. Format: 'x,y,z'."
+
 # 📤 Outputs
 
 This action exports multiple files based on the inputs that are given.
