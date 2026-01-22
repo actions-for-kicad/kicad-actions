@@ -368,9 +368,9 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
       exit 1
     fi
 
-    # Check if the quality is valid (default, high, user)
-    if [[ ! "$INPUT_PCB_OUTPUT_IMAGE_QUALITY" =~ ^(default|high|user)$ ]]; then
-      echo "::error::Invalid image quality. Supported qualities are 'default', 'high' or 'user'."
+    # Check if the quality is valid (basic, high, user)
+    if [[ ! "$INPUT_PCB_OUTPUT_IMAGE_QUALITY" =~ ^(basic|high|user)$ ]]; then
+      echo "::error::Invalid image quality. Supported qualities are 'basic', 'high' or 'user'."
       exit 1
     fi
 

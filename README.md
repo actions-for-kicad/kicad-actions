@@ -496,7 +496,7 @@ Default: `default`\
 \
 Description: Quality of the image PCB. Options:
 
-- `default`
+- `basic`
 - `high`
 - `user`
 
