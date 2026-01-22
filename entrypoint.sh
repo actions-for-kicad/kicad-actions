@@ -144,35 +144,35 @@ if [[ -n $INPUT_SCHEMATIC_FILE_NAME ]]; then
   # Export schematic to PDF
   if [[ $INPUT_SCHEMATIC_OUTPUT_PDF == "true" ]]; then
     cmd=(kicad-cli sch export pdf --output "$INPUT_SCHEMATIC_OUTPUT_PDF_FILE_NAME")
-    [[ -n $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE ]] && cmd+=(--black-and-white)
+    [[ $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE == "true" ]] && cmd+=(--black-and-white)
     "${cmd[@]}" "$INPUT_SCHEMATIC_FILE_NAME"
   fi
 
   # Export schematic to SVG
   if [[ $INPUT_SCHEMATIC_OUTPUT_SVG == "true" ]]; then
     cmd=(kicad-cli sch export svg --output "$INPUT_SCHEMATIC_OUTPUT_SVG_FOLDER_NAME")
-    [[ -n $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE ]] && cmd+=(--black-and-white)
+    [[ $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE == "true" ]] && cmd+=(--black-and-white)
     "${cmd[@]}" "$INPUT_SCHEMATIC_FILE_NAME"
   fi
 
   # Export schematic to DXF
   if [[ $INPUT_SCHEMATIC_OUTPUT_DXF == "true" ]]; then
     cmd=(kicad-cli sch export dxf --output "$INPUT_SCHEMATIC_OUTPUT_DXF_FOLDER_NAME")
-    [[ -n $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE ]] && cmd+=(--black-and-white)
+    [[ $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE == "true" ]] && cmd+=(--black-and-white)
     "${cmd[@]}" "$INPUT_SCHEMATIC_FILE_NAME"
   fi
 
   # Export schematic to HPGL
   if [[ $INPUT_SCHEMATIC_OUTPUT_HPGL == "true" ]]; then
     cmd=(kicad-cli sch export hpgl --output "$INPUT_SCHEMATIC_OUTPUT_HPGL_FOLDER_NAME")
-    [[ -n $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE ]] && cmd+=(--black-and-white)
+    [[ $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE == "true" ]] && cmd+=(--black-and-white)
     "${cmd[@]}" "$INPUT_SCHEMATIC_FILE_NAME"
   fi
 
   # Export schematic to PS
   if [[ $INPUT_SCHEMATIC_OUTPUT_PS == "true" ]]; then
     cmd=(kicad-cli sch export ps --output "$INPUT_SCHEMATIC_OUTPUT_PS_FOLDER_NAME")
-    [[ -n $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE ]] && cmd+=(--black-and-white)
+    [[ $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE == "true" ]] && cmd+=(--black-and-white)
     "${cmd[@]}" "$INPUT_SCHEMATIC_FILE_NAME"
   fi
 
@@ -396,8 +396,8 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
       --zoom "$INPUT_PCB_OUTPUT_IMAGE_ZOOM" \
       --rotate "$INPUT_PCB_OUTPUT_IMAGE_ROTATE" \
     )
-    [[ -n $INPUT_PCB_OUTPUT_IMAGE_PERSPECTIVE ]] && cmd+=(--perspective)
-    [[ -n $INPUT_PCB_OUTPUT_IMAGE_FLOOR ]] && cmd+=(--floor)
+    [[ $INPUT_PCB_OUTPUT_IMAGE_PERSPECTIVE == "true" ]] && cmd+=(--perspective)
+    [[ $INPUT_PCB_OUTPUT_IMAGE_FLOOR == "true" ]] && cmd+=(--floor)
     "${cmd[@]}" "$INPUT_PCB_FILE_NAME"
   fi
 fi
