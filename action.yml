@@ -253,7 +253,7 @@ inputs:
 
   pcb_output_image_quality:
     description: "Quality of the image PCB. Options: 'basic', 'high', 'user'."
-    default: "default"
+    default: "basic"
 
   pcb_output_image_zoom:
     description: "Zoom factor of the image PCB."
