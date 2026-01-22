@@ -40,7 +40,7 @@ export KICAD9_SYMBOL_DIR="/usr/share/kicad/symbols/"
 export KICAD9_TEMPLATE_DIR="/usr/share/kicad/template"
 
 echo "KiCad env $KICAD_DOCUMENTS_HOME"
-ls $KICAD_DOCUMENTS_HOME
+ls "/usr/share/kicad"
 
 # Define functions for input libraries
 # Function to add symbol library
