@@ -27,21 +27,6 @@ if [ "$(printf '%s\n' "$required_version" "$kicad_version" | sort -V | head -n1)
     exit 1
 fi
 
-# Set KiCad environment variables
-export KICAD8_3DMODEL_DIR="/usr/share/kicad/3dmodels/"
-export KICAD8_DESIGN_BLOCK_DIR="/usr/share/kicad/blocks/"
-export KICAD8_FOOTPRINT_DIR="/usr/share/kicad/footprints/"
-export KICAD8_SYMBOL_DIR="/usr/share/kicad/symbols/"
-export KICAD8_TEMPLATE_DIR="/usr/share/kicad/template"
-export KICAD9_3DMODEL_DIR="/usr/share/kicad/3dmodels/"
-export KICAD9_DESIGN_BLOCK_DIR="/usr/share/kicad/blocks/"
-export KICAD9_FOOTPRINT_DIR="/usr/share/kicad/footprints/"
-export KICAD9_SYMBOL_DIR="/usr/share/kicad/symbols/"
-export KICAD9_TEMPLATE_DIR="/usr/share/kicad/template"
-
-echo "KiCad env $KICAD_DOCUMENTS_HOME"
-ls "/usr/share/kicad"
-
 # Define functions for input libraries
 # Function to add symbol library
 add_symbol_lib() {
