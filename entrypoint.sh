@@ -5,7 +5,15 @@ set -e
 mkdir -p $HOME/.config
 cp -r /home/kicad/.config/kicad $HOME/.config/
 
-echo "3D Model path set to: $KICAD8_3DMODEL_DIR"
+echo "3D Model path set to: $KICAD9_3DMODEL_DIR"
+
+# KICAD9_3DMODEL_DIR	/Applications/KiCad/KiCad.app/Contents/SharedSupport/3dmodels/	
+# KICAD9_3RD_PARTY	/Users/nick/Documents/KiCad/9.0/3rdparty/	
+# KICAD9_DESIGN_BLOCK_DIR	/Applications/KiCad/KiCad.app/Contents/SharedSupport/blocks/	
+# KICAD9_FOOTPRINT_DIR	/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints/	
+# KICAD9_SYMBOL_DIR	/Applications/KiCad/KiCad.app/Contents/SharedSupport/symbols/	
+# KICAD9_TEMPLATE_DIR	/Applications/KiCad/KiCad.app/Contents/SharedSupport/template	
+# KICAD_USER_TEMPLATE_DIR	/Users/nick/Documents/KiCad/9.0/template/	
 
 erc_violation=0 # ERC exit code
 drc_violation=0 # DRC exit code

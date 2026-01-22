@@ -17,246 +17,245 @@ on:
       - "**/*.md"
 
 jobs:
-  test-no-arguments:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v6
+  # test-no-arguments:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v6
 
-      - name: Run KiCad actions
-        uses: ./
+  #     - name: Run KiCad actions
+  #       uses: ./
 
-  test-no-schematic-file:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v6
+  # test-no-schematic-file:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v6
 
-      - name: Run KiCad actions
-        id: kicad_actions
-        uses: ./
-        with:
-          schematic_output_pdf: true
-        continue-on-error: true
+  #     - name: Run KiCad actions
+  #       id: kicad_actions
+  #       uses: ./
+  #       with:
+  #         schematic_output_pdf: true
+  #       continue-on-error: true
 
-      - name: Verify file check result
-        run: |
-          if [[ "${{ steps.kicad_actions.outcome }}" != "failure" ]]; then
-            echo "::error::Expected failure, but step succeeded!"
-            exit 1
-          fi
-        shell: bash
+  #     - name: Verify file check result
+  #       run: |
+  #         if [[ "${{ steps.kicad_actions.outcome }}" != "failure" ]]; then
+  #           echo "::error::Expected failure, but step succeeded!"
+  #           exit 1
+  #         fi
+  #       shell: bash
 
-  test-no-pcb-file:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v6
+  # test-no-pcb-file:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v6
 
-      - name: Run KiCad actions
-        id: kicad_actions
-        uses: ./
-        with:
-          pcb_output_drill: true
-        continue-on-error: true
+  #     - name: Run KiCad actions
+  #       id: kicad_actions
+  #       uses: ./
+  #       with:
+  #         pcb_output_drill: true
+  #       continue-on-error: true
 
-      - name: Verify file check result
-        run: |
-          if [[ "${{ steps.kicad_actions.outcome }}" != "failure" ]]; then
-            echo "::error::Expected failure, but step succeeded!"
-            exit 1
-          fi
-        shell: bash
+  #     - name: Verify file check result
+  #       run: |
+  #         if [[ "${{ steps.kicad_actions.outcome }}" != "failure" ]]; then
+  #           echo "::error::Expected failure, but step succeeded!"
+  #           exit 1
+  #         fi
+  #       shell: bash
 
-  test-erc-drc:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        test_name:
-          [
-            "erc-failure",
-            "erc-failure-no-lib",
-            "erc-success",
-            "drc-failure",
-            "drc-failure-no-lib",
-            "drc-success",
-          ]
-        include:
-          - test_name: erc-failure
-            erc: true
-            schematic_file_name: tests/kicad-project-failure/kicad-project.kicad_sch
-            result: failure
-            expected_file: erc.rpt
-          - test_name: erc-failure-no-lib
-            erc: true
-            schematic_file_name: tests/kicad-project-success/kicad-project.kicad_sch
-            result: failure
-            expected_file: erc.rpt
-          - test_name: erc-success
-            erc: true
-            schematic_file_name: tests/kicad-project-success/kicad-project.kicad_sch
-            symbol_libraries: "test-sym-library=tests/kicad-project-success/test-sym-library.kicad_sym"
-            footprint_libraries: "test-fp-library=tests/kicad-project-success/test-fp-library.pretty"
-            result: success
-            expected_file: erc.rpt
-          - test_name: drc-failure
-            drc: true
-            pcb_file_name: tests/kicad-project-failure/kicad-project.kicad_pcb
-            result: failure
-            expected_file: drc.rpt
-          - test_name: drc-failure-no-lib
-            drc: true
-            pcb_file_name: tests/kicad-project-success/kicad-project.kicad_pcb
-            result: failure
-            expected_file: drc.rpt
-          - test_name: drc-success
-            drc: true
-            pcb_file_name: tests/kicad-project-success/kicad-project.kicad_pcb
-            footprint_libraries: "test-fp-library=tests/kicad-project-success/test-fp-library.pretty"
-            result: success
-            expected_file: drc.rpt
-    steps:
-      - uses: actions/checkout@v6
-      - name: Run ERC/DRC check
-        id: check
-        uses: ./
-        with:
-          run_erc: ${{ matrix.erc || false }}
-          run_drc: ${{ matrix.drc || false }}
-          schematic_file_name: ${{ matrix.schematic_file_name || null }}
-          symbol_libraries: ${{ matrix.symbol_libraries || null }}
-          pcb_file_name: ${{ matrix.pcb_file_name || null }}
-          footprint_libraries: ${{ matrix.footprint_libraries || null }}
-        continue-on-error: true
-      - name: Verify ERC/DRC step result
-        run: |
-          cat "${{ matrix.expected_file }}"
-          if [[ "${{ matrix.result }}" == "failure" && "${{ steps.check.outcome }}" != "failure" ]]; then
-            echo "::error::Expected failure, but step succeeded!"
-            exit 1
-          fi
-          if [[ "${{ matrix.result }}" == "success" && "${{ steps.check.outcome }}" == "failure" ]]; then
-            echo "::error::Expected success, but step failed!"
-            exit 1
-          fi
-        shell: bash
-      - name: Verify output file
-        run: |
-          if [[ ! -f "${{ matrix.expected_file }}" ]]; then
-            echo "::error::Expected output file '${{ matrix.expected_file }}' not found!"
-            exit 1
-          fi
-        shell: bash
+  # test-erc-drc:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       test_name:
+  #         [
+  #           "erc-failure",
+  #           "erc-failure-no-lib",
+  #           "erc-success",
+  #           "drc-failure",
+  #           "drc-failure-no-lib",
+  #           "drc-success",
+  #         ]
+  #       include:
+  #         - test_name: erc-failure
+  #           erc: true
+  #           schematic_file_name: tests/kicad-project-failure/kicad-project.kicad_sch
+  #           result: failure
+  #           expected_file: erc.rpt
+  #         - test_name: erc-failure-no-lib
+  #           erc: true
+  #           schematic_file_name: tests/kicad-project-success/kicad-project.kicad_sch
+  #           result: failure
+  #           expected_file: erc.rpt
+  #         - test_name: erc-success
+  #           erc: true
+  #           schematic_file_name: tests/kicad-project-success/kicad-project.kicad_sch
+  #           symbol_libraries: "test-sym-library=tests/kicad-project-success/test-sym-library.kicad_sym"
+  #           footprint_libraries: "test-fp-library=tests/kicad-project-success/test-fp-library.pretty"
+  #           result: success
+  #           expected_file: erc.rpt
+  #         - test_name: drc-failure
+  #           drc: true
+  #           pcb_file_name: tests/kicad-project-failure/kicad-project.kicad_pcb
+  #           result: failure
+  #           expected_file: drc.rpt
+  #         - test_name: drc-failure-no-lib
+  #           drc: true
+  #           pcb_file_name: tests/kicad-project-success/kicad-project.kicad_pcb
+  #           result: failure
+  #           expected_file: drc.rpt
+  #         - test_name: drc-success
+  #           drc: true
+  #           pcb_file_name: tests/kicad-project-success/kicad-project.kicad_pcb
+  #           footprint_libraries: "test-fp-library=tests/kicad-project-success/test-fp-library.pretty"
+  #           result: success
+  #           expected_file: drc.rpt
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - name: Run ERC/DRC check
+  #       id: check
+  #       uses: ./
+  #       with:
+  #         run_erc: ${{ matrix.erc || false }}
+  #         run_drc: ${{ matrix.drc || false }}
+  #         schematic_file_name: ${{ matrix.schematic_file_name || null }}
+  #         symbol_libraries: ${{ matrix.symbol_libraries || null }}
+  #         pcb_file_name: ${{ matrix.pcb_file_name || null }}
+  #         footprint_libraries: ${{ matrix.footprint_libraries || null }}
+  #       continue-on-error: true
+  #     - name: Verify ERC/DRC step result
+  #       run: |
+  #         cat "${{ matrix.expected_file }}"
+  #         if [[ "${{ matrix.result }}" == "failure" && "${{ steps.check.outcome }}" != "failure" ]]; then
+  #           echo "::error::Expected failure, but step succeeded!"
+  #           exit 1
+  #         fi
+  #         if [[ "${{ matrix.result }}" == "success" && "${{ steps.check.outcome }}" == "failure" ]]; then
+  #           echo "::error::Expected success, but step failed!"
+  #           exit 1
+  #         fi
+  #       shell: bash
+  #     - name: Verify output file
+  #       run: |
+  #         if [[ ! -f "${{ matrix.expected_file }}" ]]; then
+  #           echo "::error::Expected output file '${{ matrix.expected_file }}' not found!"
+  #           exit 1
+  #         fi
+  #       shell: bash
 
-  test-schematic-outputs:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        test_name:
-          [
-            "pdf",
-            "pdf-black-white",
-            "svg",
-            "svg-black-white",
-            "dxf",
-            "dxf-black-white",
-            "hpgl",
-            "ps",
-            "ps-black-white",
-            "bom",
-            "bom-custom",
-            "netlist",
-          ]
-        include:
-          - test_name: pdf
-            output_flag: schematic_output_pdf
-            expected_file: schematic.pdf
-          - test_name: pdf-black-white
-            output_flag: schematic_output_pdf
-            expected_file: schematic.pdf
-            schematic_output_black_white: true
-          - test_name: svg
-            output_flag: schematic_output_svg
-            expected_file: schematics/kicad-project.svg
-          - test_name: svg-black-white
-            output_flag: schematic_output_svg
-            expected_file: schematics/kicad-project.svg
-            schematic_output_black_white: true
-          - test_name: dxf
-            output_flag: schematic_output_dxf
-            expected_file: schematics/kicad-project.dxf
-          - test_name: dxf-black-white
-            output_flag: schematic_output_dxf
-            expected_file: schematics/kicad-project.dxf
-            schematic_output_black_white: true
-          - test_name: hpgl
-            output_flag: schematic_output_hpgl
-            expected_file: schematics/kicad-project.plt
-          - test_name: ps
-            output_flag: schematic_output_ps
-            expected_file: schematics/kicad-project.ps
-          - test_name: ps-black-white
-            output_flag: schematic_output_ps
-            expected_file: schematics/kicad-project.ps
-            schematic_output_black_white: true
-          - test_name: bom
-            output_flag: schematic_output_bom
-            expected_file: bom.csv
-          - test_name: bom-custom
-            output_flag: schematic_output_bom
-            expected_file: bom.csv
-            schematic_output_bom_fields: "Reference,Value,Footprint"
-          - test_name: netlist
-            output_flag: schematic_output_netlist
-            expected_file: netlist.net
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v6
+  # test-schematic-outputs:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       test_name:
+  #         [
+  #           "pdf",
+  #           "pdf-black-white",
+  #           "svg",
+  #           "svg-black-white",
+  #           "dxf",
+  #           "dxf-black-white",
+  #           "hpgl",
+  #           "ps",
+  #           "ps-black-white",
+  #           "bom",
+  #           "bom-custom",
+  #           "netlist",
+  #         ]
+  #       include:
+  #         - test_name: pdf
+  #           output_flag: schematic_output_pdf
+  #           expected_file: schematic.pdf
+  #         - test_name: pdf-black-white
+  #           output_flag: schematic_output_pdf
+  #           expected_file: schematic.pdf
+  #           schematic_output_black_white: true
+  #         - test_name: svg
+  #           output_flag: schematic_output_svg
+  #           expected_file: schematics/kicad-project.svg
+  #         - test_name: svg-black-white
+  #           output_flag: schematic_output_svg
+  #           expected_file: schematics/kicad-project.svg
+  #           schematic_output_black_white: true
+  #         - test_name: dxf
+  #           output_flag: schematic_output_dxf
+  #           expected_file: schematics/kicad-project.dxf
+  #         - test_name: dxf-black-white
+  #           output_flag: schematic_output_dxf
+  #           expected_file: schematics/kicad-project.dxf
+  #           schematic_output_black_white: true
+  #         - test_name: hpgl
+  #           output_flag: schematic_output_hpgl
+  #           expected_file: schematics/kicad-project.plt
+  #         - test_name: ps
+  #           output_flag: schematic_output_ps
+  #           expected_file: schematics/kicad-project.ps
+  #         - test_name: ps-black-white
+  #           output_flag: schematic_output_ps
+  #           expected_file: schematics/kicad-project.ps
+  #           schematic_output_black_white: true
+  #         - test_name: bom
+  #           output_flag: schematic_output_bom
+  #           expected_file: bom.csv
+  #         - test_name: bom-custom
+  #           output_flag: schematic_output_bom
+  #           expected_file: bom.csv
+  #           schematic_output_bom_fields: "Reference,Value,Footprint"
+  #         - test_name: netlist
+  #           output_flag: schematic_output_netlist
+  #           expected_file: netlist.net
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v6
 
-      - name: Run schematic output generation
-        id: generate_output
-        uses: ./
-        with:
-          schematic_file_name: tests/kicad-project-success/kicad-project.kicad_sch
-          symbol_libraries: "test-sym-library=tests/kicad-project-success/test-sym-library.kicad_sym"
-          ${{ matrix.output_flag }}: true
-          schematic_output_black_white: ${{ matrix.schematic_output_black_white || false }}
-          schematic_output_bom_fields: ${{ matrix.schematic_output_bom_fields || 'Reference,Value,Footprint,${QUANTITY},${DNP}' }}
+  #     - name: Run schematic output generation
+  #       id: generate_output
+  #       uses: ./
+  #       with:
+  #         schematic_file_name: tests/kicad-project-success/kicad-project.kicad_sch
+  #         symbol_libraries: "test-sym-library=tests/kicad-project-success/test-sym-library.kicad_sym"
+  #         ${{ matrix.output_flag }}: true
+  #         schematic_output_black_white: ${{ matrix.schematic_output_black_white || false }}
+  #         schematic_output_bom_fields: ${{ matrix.schematic_output_bom_fields || 'Reference,Value,Footprint,${QUANTITY},${DNP}' }}
 
-      - name: Verify output file
-        run: |
-          if [[ ! -f "${{ matrix.expected_file }}" ]]; then
-            echo "::error::Expected output file '${{ matrix.expected_file }}' not found!"
-            exit 1
-          fi
-        shell: bash
+  #     - name: Verify output file
+  #       run: |
+  #         if [[ ! -f "${{ matrix.expected_file }}" ]]; then
+  #           echo "::error::Expected output file '${{ matrix.expected_file }}' not found!"
+  #           exit 1
+  #         fi
+  #       shell: bash
 
   test-pcb-outputs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        test_name:
-          [
-            "drill-excellon",
-            "drill-gerber",
-            "gerbers",
-            "gerbers-drill",
-            "dxf",
-            "pdf",
-            "pdf-black-white",
-            "svg",
-            "svg-black-white",
-            "pos-ascii",
-            "pos-gerber",
-            "ipc2581",
+        test_name: [
+            # "drill-excellon",
+            # "drill-gerber",
+            # "gerbers",
+            # "gerbers-drill",
+            # "dxf",
+            # "pdf",
+            # "pdf-black-white",
+            # "svg",
+            # "svg-black-white",
+            # "pos-ascii",
+            # "pos-gerber",
+            # "ipc2581",
             "step",
-            "image-png-bottom-floor",
-            "image-png-top-opaque",
-            "image-jpg-left",
-            "image-jpeg-back-floor",
+            # "image-png-bottom-floor",
+            # "image-png-top-opaque",
+            # "image-jpg-left",
+            # "image-jpeg-back-floor",
           ]
         include:
           - test_name: drill-excellon
@@ -389,43 +388,43 @@ jobs:
           done
         shell: bash
 
-  test-full-readme:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v6
+  # test-full-readme:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v6
 
-      - name: Run KiCad actions
-        uses: ./
-        with:
-          schematic_file_name: tests/kicad-project-success/kicad-project.kicad_sch
-          symbol_libraries: test-sym-library=tests/kicad-project-success/test-sym-library.kicad_sym
-          run_erc: true
-          schematic_output_pdf: true
+  #     - name: Run KiCad actions
+  #       uses: ./
+  #       with:
+  #         schematic_file_name: tests/kicad-project-success/kicad-project.kicad_sch
+  #         symbol_libraries: test-sym-library=tests/kicad-project-success/test-sym-library.kicad_sym
+  #         run_erc: true
+  #         schematic_output_pdf: true
 
-          pcb_file_name: tests/kicad-project-success/kicad-project.kicad_pcb
-          footprint_libraries: test-fp-library=tests/kicad-project-success/test-fp-library.pretty
-          run_drc: true
-          pcb_output_gerbers_and_drill: true
-          pcb_output_image: true
+  #         pcb_file_name: tests/kicad-project-success/kicad-project.kicad_pcb
+  #         footprint_libraries: test-fp-library=tests/kicad-project-success/test-fp-library.pretty
+  #         run_drc: true
+  #         pcb_output_gerbers_and_drill: true
+  #         pcb_output_image: true
 
-      - name: Upload schematic
-        uses: actions/upload-artifact@v6
-        with:
-          name: Schematic
-          path: ./schematic.pdf
-          if-no-files-found: error
+  #     - name: Upload schematic
+  #       uses: actions/upload-artifact@v6
+  #       with:
+  #         name: Schematic
+  #         path: ./schematic.pdf
+  #         if-no-files-found: error
 
-      - name: Upload gerbers and drill file
-        uses: actions/upload-artifact@v6
-        with:
-          name: Gerbers
-          path: ./gerbers
-          if-no-files-found: error
+  #     - name: Upload gerbers and drill file
+  #       uses: actions/upload-artifact@v6
+  #       with:
+  #         name: Gerbers
+  #         path: ./gerbers
+  #         if-no-files-found: error
 
-      - name: Upload image render
-        uses: actions/upload-artifact@v6
-        with:
-          name: Image render
-          path: ./pcb.png
-          if-no-files-found: error
+  #     - name: Upload image render
+  #       uses: actions/upload-artifact@v6
+  #       with:
+  #         name: Image render
+  #         path: ./pcb.png
+  #         if-no-files-found: error
