@@ -381,6 +381,7 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
     fi
 
     # Check if the rotate is a valid int,int,int format
+    echo "INPUT_PCB_OUTPUT_IMAGE_ROTATE: $INPUT_PCB_OUTPUT_IMAGE_ROTATE"
     if ! [[ $INPUT_PCB_OUTPUT_IMAGE_ROTATE =~ ^\d+(\,\d+){2}$ ]]; then
       echo "::error::Invalid image rotate. Make sure your image rotate is in the format 'x,y,z' with valid integers."
       exit 1
