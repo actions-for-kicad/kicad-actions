@@ -257,6 +257,8 @@ jobs:
             "image-png-top-opaque",
             "image-jpg-left",
             "image-jpeg-back-floor",
+            "image-png-quality-zoom",
+            "image-png-perspective-rotate",
           ]
         include:
           - test_name: drill-excellon
@@ -354,6 +356,18 @@ jobs:
             pcb_output_image_file_name: image.jpeg
             pcb_output_image_side: back
             pcb_output_image_floor: true
+          - test_name: image-png-quality-zoom
+            output_flag: pcb_output_image
+            expected_files: image.png
+            pcb_output_image_file_name: image.png
+            pcb_output_image_quality: "high"
+            pcb_output_image_zoom: 0.5
+          - test_name: image-png-perspective-rotate
+            output_flag: pcb_output_image
+            expected_files: image.png
+            pcb_output_image_file_name: image.png
+            pcb_output_image_perspective: true
+            pcb_output_image_rotate: "310,5,20"
 
     steps:
       - name: Checkout Repository
@@ -378,6 +392,10 @@ jobs:
           pcb_output_image_width: ${{ matrix.pcb_output_image_width || 1600 }}
           pcb_output_image_height: ${{ matrix.pcb_output_image_height || 900 }}
           pcb_output_image_floor: ${{ matrix.pcb_output_image_floor || false }}
+          pcb_output_image_perspective: ${{ matrix.pcb_output_image_perspective || false }}
+          pcb_output_image_quality: ${{ matrix.pcb_output_image_quality || 'basic' }}
+          pcb_output_image_zoom: ${{ matrix.pcb_output_image_zoom || '1.0' }}
+          pcb_output_image_rotate: ${{ matrix.pcb_output_image_rotate || '0,0,0' }}
 
       - name: Verify output files
         run: |

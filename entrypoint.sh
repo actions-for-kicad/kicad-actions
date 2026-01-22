@@ -299,12 +299,12 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
 
   # Export PCB POS
   if [[ $INPUT_PCB_OUTPUT_POS == "true" ]]; then
-    if [[ $INPUT_PCB_OUTPUT_POS_FORMAT != "ascii" && $INPUT_PCB_OUTPUT_POS_FORMAT != "csv" && $INPUT_PCB_OUTPUT_POS_FORMAT != "gerber" ]]; then
+    if [[ ! "$INPUT_PCB_OUTPUT_POS_FORMAT" =~ ^(ascii|csv|gerber)$ ]]; then
       echo "::error::Invalid POS format. Supported formats are 'ascii', 'csv' and 'gerber'."
       exit 1
     fi
 
-    if [[ $INPUT_PCB_OUTPUT_POS_SIDE != "both" && $INPUT_PCB_OUTPUT_POS_SIDE != "front" && $INPUT_PCB_OUTPUT_POS_SIDE != "back" ]]; then
+    if [[ ! "$INPUT_PCB_OUTPUT_POS_SIDE" =~ ^(both|front|back)$ ]]; then
       echo "::error::Invalid POS side. Supported sides are 'both', 'front' and 'back'."
       exit 1
     fi
@@ -347,13 +347,13 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
     fi
 
     # Check if the side is valid (top, bottom, left, right, front or back)
-    if [[ $INPUT_PCB_OUTPUT_IMAGE_SIDE != "top" && $INPUT_PCB_OUTPUT_IMAGE_SIDE != "bottom" && $INPUT_PCB_OUTPUT_IMAGE_SIDE != "left" && $INPUT_PCB_OUTPUT_IMAGE_SIDE != "right" && $INPUT_PCB_OUTPUT_IMAGE_SIDE != "front" && $INPUT_PCB_OUTPUT_IMAGE_SIDE != "back" ]]; then
+    if [[ ! "$INPUT_PCB_OUTPUT_IMAGE_SIDE" =~ ^(top|bottom|left|right|front|back)$ ]]; then
       echo "::error::Invalid image side. Supported sides are 'top', 'bottom', 'left', 'right', 'front' or 'back'."
       exit 1
     fi
 
     # Check if the background is valid (default, transparent, opaque)
-    if [[ $INPUT_PCB_OUTPUT_IMAGE_BACKGROUND != "default" && $INPUT_PCB_OUTPUT_IMAGE_BACKGROUND != "transparent" && $INPUT_PCB_OUTPUT_IMAGE_BACKGROUND != "opaque" ]]; then
+    if [[ ! "$INPUT_PCB_OUTPUT_IMAGE_BACKGROUND" =~ ^(default|transparent|opaque)$ ]]; then
       echo "::error::Invalid image background. Supported backgrounds are 'default', 'transparent' or 'opaque'."
       exit 1
     fi
@@ -368,14 +368,36 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
       exit 1
     fi
 
+    # Check if the quality is valid (basic, high, user)
+    if [[ ! "$INPUT_PCB_OUTPUT_IMAGE_QUALITY" =~ ^(basic|high|user)$ ]]; then
+      echo "::error::Invalid image quality. Supported qualities are 'basic', 'high' or 'user'."
+      exit 1
+    fi
+
+    # Check if the zoom is a valid float
+    if ! [[ $INPUT_PCB_OUTPUT_IMAGE_ZOOM =~ ^[0-9]+(\.[0-9]+)$ ]]; then
+      echo "::error::Invalid image zoom. Make sure your image zoom is a valid float."
+      exit 1
+    fi
+
+    # Check if the rotate is a valid int,int,int format
+    if ! [[ $INPUT_PCB_OUTPUT_IMAGE_ROTATE =~ ^[0-9]+(\,[0-9]+){2}$ ]]; then
+      echo "::error::Invalid image rotate. Make sure your image rotate is in the format 'x,y,z' with valid integers."
+      exit 1
+    fi
+
     cmd=(kicad-cli pcb render \
       --output "$INPUT_PCB_OUTPUT_IMAGE_FILE_NAME" \
       --side "$INPUT_PCB_OUTPUT_IMAGE_SIDE" \
       --background "$INPUT_PCB_OUTPUT_IMAGE_BACKGROUND" \
       --width "$INPUT_PCB_OUTPUT_IMAGE_WIDTH" \
       --height "$INPUT_PCB_OUTPUT_IMAGE_HEIGHT" \
+      --quality "$INPUT_PCB_OUTPUT_IMAGE_QUALITY" \
+      --zoom "$INPUT_PCB_OUTPUT_IMAGE_ZOOM" \
+      --rotate "$INPUT_PCB_OUTPUT_IMAGE_ROTATE" \
     )
-    [[ -n $INPUT_PCB_OUTPUT_IMAGE_FLOOR ]] && cmd+=(--floor)
+    [[ $INPUT_PCB_OUTPUT_IMAGE_PERSPECTIVE == "true" ]] && cmd+=(--perspective)
+    [[ $INPUT_PCB_OUTPUT_IMAGE_FLOOR == "true" ]] && cmd+=(--floor)
     "${cmd[@]}" "$INPUT_PCB_FILE_NAME"
   fi
 fi
