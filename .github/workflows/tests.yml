@@ -430,8 +430,8 @@ jobs:
       - name: Upload schematic
         uses: actions/upload-artifact@v7
         with:
-          name: Schematic
           path: ./schematic.pdf
+          archive: false
           if-no-files-found: error
 
       - name: Upload gerbers and drill file
@@ -444,6 +444,6 @@ jobs:
       - name: Upload image render
         uses: actions/upload-artifact@v7
         with:
-          name: Image render
           path: ./pcb.png
+          archive: false
           if-no-files-found: error

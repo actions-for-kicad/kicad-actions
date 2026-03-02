@@ -31,7 +31,7 @@ See [action.yml](action.yml)
 ```yaml
 steps:
   - name: Checkout Repository
-    uses: actions/checkout@v4
+    uses: actions/checkout@v6
 
   - name: Run KiCad actions
     uses: actions-for-kicad/kicad-actions@v1-k9.0
@@ -48,22 +48,22 @@ steps:
       pcb_output_image: true
 
   - name: Upload schematic
-    uses: actions/upload-artifact@v4
+    uses: actions/upload-artifact@v7
     with:
-      name: Schematic
       path: ./schematic.pdf
+      archive: false
 
   - name: Upload gerbers and drill file
-    uses: actions/upload-artifact@v4
+    uses: actions/upload-artifact@v7
     with:
       name: Gerbers
       path: ./gerbers
 
   - name: Upload image render
-    uses: actions/upload-artifact@v4
+    uses: actions/upload-artifact@v7
     with:
-      name: Image render
       path: ./pcb.png
+      archive: false
 ```
 
 # 📥 Inputs
