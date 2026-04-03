@@ -15,7 +15,7 @@ The releases are formatted as follows:
 v{action-version}-k{KiCad-version}
 ```
 
-For example `v1-k10.0`. This houses version one of this action and version `9.0` from KiCad.
+For example `v2-k10.0`. This houses version one of this action and version `9.0` from KiCad.
 
 The KiCad version can be set to the `minor` or `patch` version. For example:
 
