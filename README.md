@@ -15,12 +15,12 @@ The releases are formatted as follows:
 v{action-version}-k{KiCad-version}
 ```
 
-For example `v1-k9.0`. This houses version one of this action and version `9.0` from KiCad.
+For example `v1-k10.0`. This houses version one of this action and version `9.0` from KiCad.
 
 The KiCad version can be set to the `minor` or `patch` version. For example:
 
-- Use `v{action-version}-k9.0` to to get the latest version of KiCad `v9.0` (for example `v9.0.7`).
-- Use `v{action-version}-k9.0.1` to to get the specific requested version of KiCad.
+- Use `v{action-version}-k10.0` to to get the latest version of KiCad `v10.0` (for example `v10.0.1`).
+- Use `v{action-version}-k10.0.0` to to get the specific requested version of KiCad.
 
 Check the [releases](https://github.com/actions-for-kicad/kicad-actions/releases) to see all available versions.
 
@@ -34,7 +34,7 @@ steps:
     uses: actions/checkout@v6
 
   - name: Run KiCad actions
-    uses: actions-for-kicad/kicad-actions@v1-k9.0
+    uses: actions-for-kicad/kicad-actions@v2-k10.0
     with:
       schematic_file_name: ./file.kicad_sch
       symbol_libraries: "symbol-library=./symbol-library.kicad_sym"
