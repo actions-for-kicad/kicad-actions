@@ -162,7 +162,6 @@ jobs:
             "svg-black-white",
             "dxf",
             "dxf-black-white",
-            "hpgl",
             "ps",
             "ps-black-white",
             "bom",
@@ -191,9 +190,6 @@ jobs:
             output_flag: schematic_output_dxf
             expected_file: schematics/kicad-project.dxf
             schematic_output_black_white: true
-          - test_name: hpgl
-            output_flag: schematic_output_hpgl
-            expected_file: schematics/kicad-project.plt
           - test_name: ps
             output_flag: schematic_output_ps
             expected_file: schematics/kicad-project.ps

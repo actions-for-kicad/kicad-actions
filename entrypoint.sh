@@ -162,13 +162,6 @@ if [[ -n $INPUT_SCHEMATIC_FILE_NAME ]]; then
     "${cmd[@]}" "$INPUT_SCHEMATIC_FILE_NAME"
   fi
 
-  # Export schematic to HPGL
-  if [[ $INPUT_SCHEMATIC_OUTPUT_HPGL == "true" ]]; then
-    cmd=(kicad-cli sch export hpgl --output "$INPUT_SCHEMATIC_OUTPUT_HPGL_FOLDER_NAME")
-    [[ $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE == "true" ]] && cmd+=(--black-and-white)
-    "${cmd[@]}" "$INPUT_SCHEMATIC_FILE_NAME"
-  fi
-
   # Export schematic to PS
   if [[ $INPUT_SCHEMATIC_OUTPUT_PS == "true" ]]; then
     cmd=(kicad-cli sch export ps --output "$INPUT_SCHEMATIC_OUTPUT_PS_FOLDER_NAME")

@@ -143,20 +143,6 @@ Default: `schematics`\
 \
 Description: Output folder name of DXF schematic.
 
-## `schematic_output_hpgl`
-
-Required: `false`\
-Default: `false`\
-\
-Description: Run the HPGL export of the schematic.
-
-## `schematic_output_hpgl_folder_name`
-
-Required: `false`\
-Default: `schematics`\
-\
-Description: Output folder name of HPGL schematic.
-
 ## `schematic_output_ps`
 
 Required: `false`\
