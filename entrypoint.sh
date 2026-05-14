@@ -145,6 +145,7 @@ if [[ -n $INPUT_SCHEMATIC_FILE_NAME ]]; then
   if [[ $INPUT_SCHEMATIC_OUTPUT_PDF == "true" ]]; then
     cmd=(kicad-cli sch export pdf --output "$INPUT_SCHEMATIC_OUTPUT_PDF_FILE_NAME")
     [[ $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE == "true" ]] && cmd+=(--black-and-white)
+    [[ -n $INPUT_SCHEMATIC_OUTPUT_PAGES ]] && cmd+=(--pages "$INPUT_SCHEMATIC_OUTPUT_PAGES")
     "${cmd[@]}" "$INPUT_SCHEMATIC_FILE_NAME"
   fi
 
@@ -152,6 +153,7 @@ if [[ -n $INPUT_SCHEMATIC_FILE_NAME ]]; then
   if [[ $INPUT_SCHEMATIC_OUTPUT_SVG == "true" ]]; then
     cmd=(kicad-cli sch export svg --output "$INPUT_SCHEMATIC_OUTPUT_SVG_FOLDER_NAME")
     [[ $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE == "true" ]] && cmd+=(--black-and-white)
+    [[ -n $INPUT_SCHEMATIC_OUTPUT_PAGES ]] && cmd+=(--pages "$INPUT_SCHEMATIC_OUTPUT_PAGES")
     "${cmd[@]}" "$INPUT_SCHEMATIC_FILE_NAME"
   fi
 
@@ -159,6 +161,7 @@ if [[ -n $INPUT_SCHEMATIC_FILE_NAME ]]; then
   if [[ $INPUT_SCHEMATIC_OUTPUT_DXF == "true" ]]; then
     cmd=(kicad-cli sch export dxf --output "$INPUT_SCHEMATIC_OUTPUT_DXF_FOLDER_NAME")
     [[ $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE == "true" ]] && cmd+=(--black-and-white)
+    [[ -n $INPUT_SCHEMATIC_OUTPUT_PAGES ]] && cmd+=(--pages "$INPUT_SCHEMATIC_OUTPUT_PAGES")
     "${cmd[@]}" "$INPUT_SCHEMATIC_FILE_NAME"
   fi
 
@@ -166,6 +169,7 @@ if [[ -n $INPUT_SCHEMATIC_FILE_NAME ]]; then
   if [[ $INPUT_SCHEMATIC_OUTPUT_PS == "true" ]]; then
     cmd=(kicad-cli sch export ps --output "$INPUT_SCHEMATIC_OUTPUT_PS_FOLDER_NAME")
     [[ $INPUT_SCHEMATIC_OUTPUT_BLACK_WHITE == "true" ]] && cmd+=(--black-and-white)
+    [[ -n $INPUT_SCHEMATIC_OUTPUT_PAGES ]] && cmd+=(--pages "$INPUT_SCHEMATIC_OUTPUT_PAGES")
     "${cmd[@]}" "$INPUT_SCHEMATIC_FILE_NAME"
   fi
 
