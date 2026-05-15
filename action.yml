@@ -35,6 +35,9 @@ inputs:
     description: "Run the PDF, SVG, DXF and PS schematic export in black and white."
     default: false
 
+  schematic_output_pages:
+    description: "Comma-separated list of schematic pages to include in exports."
+
   # Schematic SVG output
   schematic_output_svg:
     description: "Run the SVG export of the schematic."
