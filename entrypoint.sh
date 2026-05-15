@@ -17,6 +17,12 @@ fi
 # Check if KiCad version is 8.0 or higher
 kicad_version=$(kicad-cli --version | grep -oP '\d+\.\d+')
 required_version="8.0"
+major_version=$(echo "$kicad_version" | cut -d. -f1)
+
+if [ "$major_version" = "8" ] || [ "$major_version" = "9" ]; then
+    echo "::warning::KiCad version $kicad_version is deprecated. Please upgrade to a newer version."
+fi
+
 config_dir="$HOME/.config/kicad/$kicad_version"
 symbol_lib_path="$config_dir/sym-lib-table"
 footprint_lib_path="$config_dir/fp-lib-table"
