@@ -111,7 +111,6 @@ Description: Output file name of PDF schematic.
 ## `schematic_output_pages`
 
 Required: `false`\
-Default: (all pages)\
 \
 Description: Comma-separated list of schematic pages to include in exports.
 
