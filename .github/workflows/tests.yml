@@ -176,6 +176,10 @@ jobs:
             output_flag: schematic_output_pdf
             expected_file: schematic.pdf
             schematic_output_black_white: true
+          - test_name: pdf-one-page
+            output_flag: schematic_output_pdf
+            schematic_output_pages: 1
+            expected_file: schematic.pdf
           - test_name: svg
             output_flag: schematic_output_svg
             expected_file: schematics/kicad-project.svg
@@ -219,6 +223,7 @@ jobs:
           symbol_libraries: "test-sym-library=tests/kicad-project-success/test-sym-library.kicad_sym"
           ${{ matrix.output_flag }}: true
           schematic_output_black_white: ${{ matrix.schematic_output_black_white || false }}
+          schematic_output_pages: ${{ matrix.schematic_output_pages }}
           schematic_output_bom_fields: ${{ matrix.schematic_output_bom_fields || 'Reference,Value,Footprint,${QUANTITY},${DNP}' }}
 
       - name: Verify output file
