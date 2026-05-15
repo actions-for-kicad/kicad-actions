@@ -19,8 +19,8 @@ For example `v2-k10.0`. This houses version `2` of this action and version `10.0
 
 The KiCad version can be set to the `minor` or `patch` version. For example:
 
-- Use `v{action-version}-k10.0` to get the latest version of KiCad `v10.0` (for example `v10.0.1`).
-- Use `v{action-version}-k10.0.0` to get the specific requested version of KiCad.
+- Use `v{action-version}-k10.0` to to get the latest version of KiCad `v10.0` (for example `v10.0.2`).
+- Use `v{action-version}-k10.0.0` to to get the specific requested version of KiCad.
 
 Check the [releases](https://github.com/actions-for-kicad/kicad-actions/releases) to see all available versions.
 
