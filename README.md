@@ -1,3 +1,9 @@
+![Count of Action Users](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/actions-for-kicad/kicad-actions/refs/heads/gh-pages/docs/kicad-actions.json)
+![Release](https://img.shields.io/github/v/release/actions-for-kicad/kicad-actions)
+![License](https://img.shields.io/github/license/actions-for-kicad/kicad-actions)
+![Workflow Status](https://img.shields.io/github/actions/workflow/status/actions-for-kicad/kicad-actions/tests.yml?branch=main&label=tests)
+![Open Issues](https://img.shields.io/github/issues/actions-for-kicad/kicad-actions)
+
 # KiCad actions
 
 This GitHub Action provides a way to run [KiCad](https://www.kicad.org/) in your CI pipelines.
