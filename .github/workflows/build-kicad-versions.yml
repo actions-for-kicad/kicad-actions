@@ -81,7 +81,7 @@ jobs:
           fi
 
           if [ -n "$PREV_SIMPLE_TAG" ]; then
-            gh release create "$TAG" --title "v${{ env.action_version }}-k${{ matrix.kicad_version }}" --generate-notes --notes-from-tag "$PREV_SIMPLE_TAG" $LATEST_FLAG
+            gh release create "$TAG" --title "v${{ env.action_version }}-k${{ matrix.kicad_version }}" --generate-notes --notes-from-tag "$PREV_SIMPLE_TAG_COMMIT" $LATEST_FLAG
           else
             gh release create "$TAG" --title "v${{ env.action_version }}-k${{ matrix.kicad_version }}" --generate-notes $LATEST_FLAG
           fi
