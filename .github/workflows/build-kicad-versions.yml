@@ -62,6 +62,7 @@ jobs:
 
       - name: Create Git Tag and Release
         run: |
+          # Find the most recent simple tag (without -kicad suffix) to use as a reference for release notes
           PREV_SIMPLE_TAG=$(git tag --list 'v[0-9]*.[0-9]*' | grep -E '^v[0-9]+\.[0-9]+$' | sort -V | tail -n1 || true)
           if [ -n "$PREV_SIMPLE_TAG" ]; then
             PREV_SIMPLE_TAG_COMMIT=$(git rev-list -n1 "$PREV_SIMPLE_TAG")
@@ -73,7 +74,7 @@ jobs:
           git tag "$TAG"
           git push origin "$TAG"
 
-          # Extract major.minor version and check if it's the latest
+          # Check if version is the latest major.minor version to make sure it is marked as latest release on GitHub
           LATEST_MAJOR_MINOR=$(grep -oE '"[0-9]+\.[0-9]+"' .github/workflows/build-kicad-versions.yml | grep -oE '[0-9]+\.[0-9]+' | sort -uV | tail -n1)
           LATEST_FLAG=""
           if [ "${{ matrix.kicad_version }}" = "$LATEST_MAJOR_MINOR" ]; then
