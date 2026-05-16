@@ -1,3 +1,5 @@
+![Count of Action Users](https://img.shields.io/endpoint?url=https://YOURUSERID.github.io/REPOSITORY/action-name.json)
+
 # KiCad actions
 
 This GitHub Action provides a way to run [KiCad](https://www.kicad.org/) in your CI pipelines.

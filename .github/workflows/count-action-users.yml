@@ -1,4 +1,4 @@
-name: count-action-users
+name: Count action users
 
 on:
   schedule:
@@ -11,6 +11,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: gh-pages
 
       - name: Generate user count JSON endpoint
         uses: cicirello/count-action-users@v1
