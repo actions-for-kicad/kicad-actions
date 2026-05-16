@@ -62,10 +62,29 @@ jobs:
 
       - name: Create Git Tag and Release
         run: |
+          PREV_SIMPLE_TAG=$(git tag --list 'v[0-9]*.[0-9]*' | grep -E '^v[0-9]+\.[0-9]+$' | sort -V | tail -n1 || true)
+          if [ -n "$PREV_SIMPLE_TAG" ]; then
+            PREV_SIMPLE_TAG_COMMIT=$(git rev-list -n1 "$PREV_SIMPLE_TAG")
+            echo "Previous simple tag: $PREV_SIMPLE_TAG"
+            echo "Previous commit hash: $PREV_SIMPLE_TAG_COMMIT"
+          fi
+
           TAG="v${{ env.action_version }}-k${{ matrix.kicad_version }}"
-          git tag $TAG
-          git push origin $TAG
-          gh release create $TAG --title "v${{ env.action_version }}-k${{ matrix.kicad_version }}" --generate-notes
+          git tag "$TAG"
+          git push origin "$TAG"
+
+          # Extract major.minor version and check if it's the latest
+          LATEST_MAJOR_MINOR=$(grep -oE '"[0-9]+\.[0-9]+"' .github/workflows/build-kicad-versions.yml | grep -oE '[0-9]+\.[0-9]+' | sort -uV | tail -n1)
+          LATEST_FLAG=""
+          if [ "${{ matrix.kicad_version }}" = "$LATEST_MAJOR_MINOR" ]; then
+            LATEST_FLAG="--latest"
+          fi
+
+          if [ -n "$PREV_SIMPLE_TAG" ]; then
+            gh release create "$TAG" --title "v${{ env.action_version }}-k${{ matrix.kicad_version }}" --generate-notes --notes-from-tag "$PREV_SIMPLE_TAG" $LATEST_FLAG
+          else
+            gh release create "$TAG" --title "v${{ env.action_version }}-k${{ matrix.kicad_version }}" --generate-notes $LATEST_FLAG
+          fi
 
           MAIN_VERSION_TAG="v$(echo ${{ env.action_version }} | grep -oE '^[0-9]+')-k${{ matrix.kicad_version }}"
           git tag -f $MAIN_VERSION_TAG
