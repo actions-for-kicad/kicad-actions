@@ -74,6 +74,13 @@ steps:
 
 # 📥 Inputs
 
+## `project_file_name`
+
+Required: `false`\
+\
+Description: The project file, used for running a jobset. Not required if there
+is a single `.kicad_pro` file in the working directory.
+
 ## `schematic_file_name`
 
 Required: `false`\
@@ -511,6 +518,12 @@ Required: `false`\
 Default: `0,0,0`\
 \
 Description: "Rotation of the image PCB. Format: 'x,y,z'."
+
+## `jobset_file_name`
+
+Required: `false`\
+\
+Description: Run a predefined KiCad jobset file.
 
 # 📤 Outputs
 

@@ -5,6 +5,10 @@ branding:
   color: "green"
 
 inputs:
+  # Project file
+  project_file_name:
+    description: "The project file, used for running a jobset. Not required if there is a single `.kicad_pro` file in the working directory."
+
   # Schematic input file
   schematic_file_name:
     description: "Location of the '.kicad_sch' file."
@@ -256,6 +260,10 @@ inputs:
   pcb_output_image_rotate:
     description: "Rotation of the image PCB. Format: 'x,y,z'."
     default: "0,0,0"
+
+  # Jobset
+  jobset_file_name:
+    description: "Run a predefined KiCad jobset file."
 
 runs:
   using: "docker"
