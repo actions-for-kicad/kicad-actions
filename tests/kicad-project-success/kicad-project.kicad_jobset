@@ -1,0 +1,31 @@
+{
+  "jobs": [
+    {
+      "description": "Schematic ERC",
+      "id": "0fcb537f-8eb9-4379-af27-a66094430c9b",
+      "settings": {
+        "description": "Schematic ERC",
+        "fail_on_error": false,
+        "format": "report",
+        "output_filename": "erc.rpt",
+        "severity": 48,
+        "units": "mm"
+      },
+      "type": "sch_erc"
+    }
+  ],
+  "meta": {
+    "version": 1
+  },
+  "outputs": [
+    {
+      "description": "Jobset outputs",
+      "id": "298c510b-a4ce-4135-8bb0-8639680d1767",
+      "only": [],
+      "settings": {
+        "output_path": "jobset_out"
+      },
+      "type": "folder"
+    }
+  ]
+}
