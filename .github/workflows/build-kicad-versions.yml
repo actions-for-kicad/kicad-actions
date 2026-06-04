@@ -63,7 +63,7 @@ jobs:
       - name: Create Git Tag and Release
         run: |
           # Find the most recent simple tag (without -kicad suffix) to use as a reference for release notes
-          PREV_SIMPLE_TAG=$(git tag --list 'v[0-9]*.[0-9]*' | grep -E '^v[0-9]+\.[0-9]+$' | sort -V | tail -n1 || true)
+          PREV_SIMPLE_TAG=$(git tag --list 'v[0-9]*.[0-9]*' | grep -E '^v[0-9]+\.[0-9]+$' | grep -v "^v${{ env.action_version }}$" | sort -V | tail -n1 || true)
           if [ -n "$PREV_SIMPLE_TAG" ]; then
             PREV_SIMPLE_TAG_COMMIT=$(git rev-list -n1 "$PREV_SIMPLE_TAG")
             echo "Previous simple tag: $PREV_SIMPLE_TAG"
