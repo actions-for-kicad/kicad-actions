@@ -81,6 +81,34 @@ $entry
   fi
 }
 
+find_project_file() {
+  if [[ -n "$INPUT_PROJECT_FILE_NAME" ]]; then
+    if [ ! -f "$INPUT_PROJECT_FILE_NAME" ]; then
+      echo "::error::Project file '$INPUT_PROJECT_FILE_NAME' not found."
+      exit 1
+    fi
+    project_file_name="$INPUT_PROJECT_FILE_NAME"
+  else
+    # Find project file in working directory
+    shopt -s nullglob
+    local candidates=( *.kicad_pro )
+    shopt -u nullglob
+    case "${#candidates[@]}" in
+      0)
+        echo "::error::project_file_name not specified, and no .kicad_pro file found."
+        exit 1
+        ;;
+      1)
+        project_file_name="${candidates[0]}"
+        ;;
+      *)
+        echo "::error::project_file_name not specified, and multiple .kicad_pro files found."
+        exit 1
+        ;;
+    esac
+  fi
+}
+
 # Check if any schematic output/erc are selected without the file being present
 if [[ -z $INPUT_SCHEMATIC_FILE_NAME && (
     $INPUT_RUN_ERC == "true" || 
@@ -411,6 +439,18 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
     [[ $INPUT_PCB_OUTPUT_IMAGE_FLOOR == "true" ]] && cmd+=(--floor)
     "${cmd[@]}" "$INPUT_PCB_FILE_NAME"
   fi
+fi
+
+# Run jobset
+if [[ -n $INPUT_JOBSET_FILE_NAME ]]; then
+  # Confirm that the file exists
+  if [ ! -f "$INPUT_JOBSET_FILE_NAME" ]; then
+    echo "::error::Jobset file '$INPUT_JOBSET_FILE_NAME' not found."
+    exit 1
+  fi
+
+  find_project_file
+  kicad-cli jobset run --file "$INPUT_JOBSET_FILE_NAME" "$project_file_name"
 fi
 
 # Return non-zero exit code for ERC or DRC violations

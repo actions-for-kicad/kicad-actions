@@ -452,3 +452,47 @@ jobs:
           path: ./pcb.png
           archive: false
           if-no-files-found: error
+
+  test-jobset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Run jobset
+        uses: ./
+        with:
+          symbol_libraries: "test-sym-library=tests/kicad-project-success/test-sym-library.kicad_sym"
+          jobset_file_name: tests/kicad-project-success/kicad-project.kicad_jobset
+          project_file_name: tests/kicad-project-success/kicad-project.kicad_pro
+
+      - name: Verify output file
+        run: |
+          if [[ ! -f jobset_out/erc.rpt ]]; then
+            echo "::error::Expected output file 'jobset_out/erc.rpt' not found!"
+            exit 1
+          fi
+        shell: bash
+
+  test-jobset-detect-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Move project files to CWD
+        run: mv tests/kicad-project-success/* .
+
+      - name: Run jobset (detect project file)
+        uses: ./
+        with:
+          symbol_libraries: "test-sym-library=test-sym-library.kicad_sym"
+          jobset_file_name: kicad-project.kicad_jobset
+
+      - name: Verify output file
+        run: |
+          if [[ ! -f jobset_out/erc.rpt ]]; then
+            echo "::error::Expected output file 'jobset_out/erc.rpt' not found!"
+            exit 1
+          fi
+        shell: bash
