@@ -222,6 +222,14 @@ if [[ -n $INPUT_SCHEMATIC_FILE_NAME ]]; then
       --output "$INPUT_SCHEMATIC_OUTPUT_NETLIST_FILE_NAME" \
       "$INPUT_SCHEMATIC_FILE_NAME"
   fi
+
+  # Export schematic XML netlist
+  if [[ $INPUT_SCHEMATIC_OUTPUT_XML_NETLIST == "true" ]]; then
+    kicad-cli sch export netlist \
+      --format kicadxml \
+      --output "$INPUT_SCHEMATIC_OUTPUT_XML_NETLIST_FILE_NAME" \
+      "$INPUT_SCHEMATIC_FILE_NAME"
+  fi
 fi
 
 # Run PCB outputs

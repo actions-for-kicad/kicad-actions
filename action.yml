@@ -95,6 +95,15 @@ inputs:
     description: "Output file name of the netlist."
     default: "netlist.net"
 
+  # Schematic netlist output (XML format)
+  schematic_output_xml_netlist:
+    description: "Run the XML netlist export of the schematic."
+    default: false
+
+  schematic_output_xml_netlist_file_name:
+    description: "Output file name of the XML netlist."
+    default: "netlist.xml"
+
   # PCB input file
   pcb_file_name:
     description: "Location of the '.kicad_pcb' file."

@@ -218,6 +218,21 @@ Default: `netlist.net`\
 \
 Description: Output file name of the netlist.
 
+## `schematic_output_xml_netlist`
+
+Required: `false`\
+Default: `false`\
+\
+Description: Run the netlist export of the schematic, in XML format for further
+processing.
+
+## `schematic_output_xml_netlist_file_name`
+
+Required: `false`\
+Default: `netlist.xml`\
+\
+Description: Output file name of the XML netlist.
+
 ## `pcb_file_name`
 
 Required: `false`\

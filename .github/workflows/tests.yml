@@ -167,6 +167,7 @@ jobs:
             "bom",
             "bom-custom",
             "netlist",
+            "netlist-xml",
           ]
         include:
           - test_name: pdf
@@ -211,6 +212,9 @@ jobs:
           - test_name: netlist
             output_flag: schematic_output_netlist
             expected_file: netlist.net
+          - test_name: netlist-xml
+            output_flag: schematic_output_xml_netlist
+            expected_file: netlist.xml
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
