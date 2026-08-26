@@ -314,6 +314,9 @@ inputs:
     description: "Treat unsaturated mid-grey component colours as bare metal, so leads and shields render metallic instead of as grey plastic."
     default: true
 
+  pcb_output_glb_metal_colors:
+    description: "Comma-separated hex colours whose component materials are forced metallic, for example 'EDBE51,97A3DA'. Overrides the colour heuristic, which cannot tell gold plating or a nickel connector shell from plastic. Board layers are never affected."
+
   pcb_output_glb_keep_transparency:
     description: "Keep the board, soldermask and silkscreen as blended transparent materials, as KiCad exports them. These sort badly in real-time renderers."
     default: false

@@ -472,6 +472,7 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
         [[ $INPUT_PCB_OUTPUT_GLB_DETECT_METALS == "true" ]] && pp+=(--detect-metals) || pp+=(--no-detect-metals)
         [[ $INPUT_PCB_OUTPUT_GLB_KEEP_TRANSPARENCY == "true" ]] && pp+=(--keep-transparency)
         [[ -n $INPUT_PCB_OUTPUT_GLB_SCALE ]] && pp+=(--scale "$INPUT_PCB_OUTPUT_GLB_SCALE")
+        [[ -n $INPUT_PCB_OUTPUT_GLB_METAL_COLORS ]] && pp+=(--metal-colors "$INPUT_PCB_OUTPUT_GLB_METAL_COLORS")
         "${pp[@]}"
       fi
     fi

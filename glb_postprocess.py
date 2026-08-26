@@ -35,6 +35,7 @@ Requires only the standard library.
 
 import argparse
 import json
+import re
 import struct
 import sys
 from pathlib import Path
@@ -127,6 +128,53 @@ def mesh_role(name):
         if name.endswith(suffix):
             return role
     return "component"
+
+
+# OpenCASCADE names nodes after the label path of the shape they came from,
+# in either of two spellings: '=>[0:1:1:13]' and '=>0:1:1:14'.
+OCCT_LABEL_RE = re.compile(r"^=>\[?[\d:]+\]?$")
+
+
+def is_occt_label(name):
+    return bool(name) and bool(OCCT_LABEL_RE.match(name))
+
+
+def hex_of(base_color):
+    """Six-digit uppercase hex for a glTF baseColorFactor."""
+    return "".join(
+        f"{int(round(min(1.0, max(0.0, c)) * 255)):02X}" for c in base_color[:3]
+    )
+
+
+def parse_color_list(raw):
+    """Parse a comma-separated list of hex colours into normalised 6-digit hex.
+
+    Accepts '#EDBE51', 'edbe51' and 3-digit shorthand like 'fff'.
+    """
+    out = set()
+    bad = []
+    for token in (raw or "").replace(";", ",").split(","):
+        token = token.strip().lstrip("#").upper()
+        if not token:
+            continue
+        if len(token) == 3 and all(c in "0123456789ABCDEF" for c in token):
+            token = "".join(c * 2 for c in token)
+        if len(token) == 6 and all(c in "0123456789ABCDEF" for c in token):
+            out.add(token)
+        else:
+            bad.append(token)
+    return out, bad
+
+
+def unique_name(desired, taken):
+    """Return `desired`, suffixed if needed, and record it in `taken`."""
+    name = desired
+    n = 2
+    while name in taken:
+        name = f"{desired}_{n}"
+        n += 1
+    taken.add(name)
+    return name
 
 
 def dominant_normal_axis(gltf, binary, mesh):
@@ -252,20 +300,29 @@ def make_opaque(material):
 # --------------------------------------------------------------------------
 
 
+BOARD_ROLES = ("board", "soldermask", "silkscreen", "copper", "pad")
+
+
 def process(gltf, binary, opts):
     meshes = gltf.get("meshes", [])
     nodes = gltf.get("nodes", [])
     materials = gltf.get("materials", [])
     stats = {
-        "opaque": 0, "culled": 0, "pbr_fixed": 0,
-        "metal": 0, "renamed_nodes": 0, "renamed_mats": 0,
+        "opaque": 0, "culled": 0, "pbr_fixed": 0, "metal": 0,
+        "forced_metal": 0, "renamed_nodes": 0, "renamed_mats": 0,
     }
+
+    metal_colours, bad_colours = parse_color_list(opts.metal_colors)
+    if bad_colours:
+        warn("Ignoring unparseable --metal-colors entries: " + ", ".join(bad_colours))
+    matched_colours = set()
+    taken_mats = set()
 
     if not meshes:
         warn("GLB contains no meshes; nothing to post-process.")
         return stats
 
-    by_mesh, _ = build_node_index(gltf)
+    by_mesh, parent_of = build_node_index(gltf)
 
     # ---- classify meshes, disambiguating front/back flat-face layers -------
     roles = {}
@@ -308,7 +365,6 @@ def process(gltf, binary, opts):
         "pad": "Pads",
         "component": "Component",
     }
-    mat_counter = {}
     for idx, material in enumerate(materials):
         used_by = mat_roles.get(idx, set())
         # Only apply a role-specific policy when the material is unambiguous.
@@ -334,10 +390,21 @@ def process(gltf, binary, opts):
             if "roughnessFactor" not in pbr:
                 set_pbr(material, None, opts.copper_roughness)
         else:
-            # Component materials, or a material shared across roles. Supply
-            # PBR values only where kicad-cli left them absent -- that absence
-            # is what makes glTF fall back to metal=1.0 / rough=1.0.
-            if "metallicFactor" not in pbr and "roughnessFactor" not in pbr:
+            # Component materials, or a material shared across roles.
+            #
+            # An explicit --metal-colors entry wins over the colour heuristic,
+            # because no heuristic can settle every case: a single material can
+            # serve both a white plastic housing and a nickel-plated connector
+            # shell, and then the colour carries no information at all.
+            colour = hex_of(base)
+            if colour in metal_colours:
+                set_pbr(material, opts.metal_metallic, opts.metal_roughness)
+                matched_colours.add(colour)
+                stats["forced_metal"] += 1
+            elif "metallicFactor" not in pbr and "roughnessFactor" not in pbr:
+                # Supply PBR values only where kicad-cli left them absent --
+                # that absence is what makes glTF fall back to metal=1.0 /
+                # rough=1.0.
                 if opts.detect_metals and looks_like_bare_metal(base):
                     set_pbr(material, opts.metal_metallic, opts.metal_roughness)
                     stats["metal"] += 1
@@ -350,15 +417,19 @@ def process(gltf, binary, opts):
             stats["culled"] += 1
 
         if not opts.keep_names:
-            # Name after the side-specific label where the material belongs to
-            # exactly one, so material names line up with node names.
-            labels = mat_labels.get(idx, set())
-            key = next(iter(labels)) if len(labels) == 1 else role
-            stem = PRETTY.get(key, "Material") if key else "Material"
-            n = mat_counter.get(stem, 0)
-            mat_counter[stem] = n + 1
-            # Keep the first of a kind unsuffixed so names stay readable.
-            new = stem if n == 0 else f"{stem}_{n}"
+            if role in BOARD_ROLES:
+                # Name after the side-specific label where the material belongs
+                # to exactly one, so material names line up with node names.
+                labels = mat_labels.get(idx, set())
+                key = next(iter(labels)) if len(labels) == 1 else role
+                new = unique_name(PRETTY.get(key, "Material"), taken_mats)
+            else:
+                # Name component materials after their colour rather than a
+                # running index. An index shifts whenever the board gains or
+                # loses a part, which would silently retarget any material
+                # override written against it downstream.
+                stem = "Component" if role == "component" else "Material"
+                new = unique_name(f"{stem}_{hex_of(base)}", taken_mats)
             if material.get("name") != new:
                 material["name"] = new
                 stats["renamed_mats"] += 1
@@ -374,23 +445,56 @@ def process(gltf, binary, opts):
             "copper": "Copper",
             "pad": "Pads",
         }
+        taken_nodes = set()
+
+        def owning_refdes(node_idx):
+            """Nearest ancestor name that is a reference designator.
+
+            A multi-solid STEP model gets an extra OpenCASCADE assembly node
+            between the footprint and its meshes, so the immediate parent is
+            not always the reference designator -- for a two-solid connector
+            the chain is J3 -> '=>[0:1:1:13]' -> two mesh nodes. Walk up until
+            a real name appears.
+            """
+            seen = set()
+            cur = parent_of.get(node_idx)
+            while cur is not None and cur not in seen:
+                seen.add(cur)
+                name = nodes[cur].get("name")
+                if name and not is_occt_label(name):
+                    return name
+                cur = parent_of.get(cur)
+            return None
+
         for mi, mesh in enumerate(meshes):
             role, label = roles[mi]
-            node_idx, parent_idx = by_mesh.get(mi, (None, None))
+            node_idx, _ = by_mesh.get(mi, (None, None))
             if node_idx is None:
                 continue
             if role == "component":
-                # The reference designator lives on the parent; give the mesh
+                # The reference designator lives on an ancestor; give the mesh
                 # node a derived name so both are addressable.
-                parent = nodes[parent_idx] if parent_idx is not None else None
-                refdes = parent.get("name") if parent else None
-                new = f"{refdes}_Model" if refdes else mesh.get("name", "Component")
+                refdes = owning_refdes(node_idx)
+                stem = f"{refdes}_Model" if refdes else mesh.get("name", "Component")
+                new = unique_name(stem, taken_nodes)
             else:
                 new = NODE_NAMES.get(label, label)
                 mesh["name"] = new
+                taken_nodes.add(new)
             if nodes[node_idx].get("name") != new:
                 nodes[node_idx]["name"] = new
                 stats["renamed_nodes"] += 1
+
+        # Any intermediate OpenCASCADE assembly node left over is still
+        # unaddressable, so name it after the part it belongs to.
+        for i, node in enumerate(nodes):
+            if not is_occt_label(node.get("name", "")):
+                continue
+            refdes = owning_refdes(i)
+            node["name"] = unique_name(
+                f"{refdes}_Assembly" if refdes else "Assembly", taken_nodes
+            )
+            stats["renamed_nodes"] += 1
 
     # ---- recentre and scale ----------------------------------------------
     if opts.center or opts.scale != 1.0:
@@ -462,6 +566,11 @@ def process(gltf, binary, opts):
             if not nodes[r].get("name"):
                 nodes[r]["name"] = opts.root_name
 
+    unmatched = sorted(metal_colours - matched_colours)
+    if unmatched:
+        warn("These --metal-colors matched no component material, so they had "
+             "no effect: " + ", ".join(unmatched))
+
     return stats
 
 
@@ -493,6 +602,11 @@ def build_parser():
                                       "colours as bare metal (default)")
     p.add_argument("--no-detect-metals", dest="detect_metals", action="store_false",
                    help="treat every component material as a dielectric")
+    p.add_argument("--metal-colors", default="",
+                   help="comma-separated hex colours whose component materials "
+                        "are forced metallic, e.g. 'EDBE51,97A3DA'. Overrides "
+                        "the colour heuristic. Board layers are never affected, "
+                        "so listing FFFFFF cannot make the silkscreen metallic.")
 
     p.add_argument("--board-roughness", type=float, default=0.85)
     p.add_argument("--mask-roughness", type=float, default=0.45)
@@ -531,6 +645,8 @@ def main(argv=None):
 
     log(f"{stats['pbr_fixed']} component materials given PBR values "
         f"({stats['metal']} detected as bare metal)")
+    if stats["forced_metal"]:
+        log(f"{stats['forced_metal']} materials forced metallic by --metal-colors")
     log(f"{stats['opaque']} materials forced opaque, "
         f"{stats['culled']} switched to backface culling")
     log(f"renamed {stats['renamed_nodes']} nodes and {stats['renamed_mats']} materials")

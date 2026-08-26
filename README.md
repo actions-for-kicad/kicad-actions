@@ -608,7 +608,18 @@ Required: `false`\
 Default: `true`\
 \
 Description: Treat unsaturated mid-grey component colours as bare metal, so
-leads and shielding cans render metallic rather than as grey plastic.
+leads and shielding cans render metallic rather than as grey plastic. See
+[Component materials](#component-materials) for what this can and cannot get
+right.
+
+## `pcb_output_glb_metal_colors`
+
+Required: `false`\
+\
+Description: Comma-separated hex colours whose component materials are forced
+metallic, for example `EDBE51,97A3DA`. Overrides the colour heuristic. Board
+layers are never affected, so listing `FFFFFF` cannot make the silkscreen
+metallic. See [Component materials](#component-materials).
 
 ## `pcb_output_glb_keep_transparency`
 
@@ -779,11 +790,55 @@ PCB
 ├── SolderMask_Back
 ├── Silkscreen_Front
 ├── Pads
-└── D101
-    └── D101_Model
+├── D101
+│   └── D101_Model
+└── J3                      # multi-solid STEP model
+    └── J3_Assembly
+        ├── J3_Model
+        └── J3_Model_2
 ```
 
+A component whose 3D model contains several solids gets an extra assembly
+level, because that is how OpenCASCADE structures it. Those intermediate nodes
+are named after the part they belong to rather than left as label paths.
+
 Set `pcb_output_glb_optimize: false` to get `kicad-cli`'s output untouched.
+
+## Component materials
+
+Board layers get materials named after themselves — `Board`, `SolderMask_Front`
+and so on. Component materials are named after their colour instead, for
+example `Component_EDBE51`. That is deliberate: a running index would shift
+whenever the board gains or loses a part, silently retargeting any material
+override written against it. A colour-derived name stays put.
+
+Because `kicad-cli` emits no `metallicFactor` for model-derived materials, the
+metal-versus-plastic call has to be guessed from colour, and
+`pcb_output_glb_detect_metals` does that by treating unsaturated mid-grey as
+bare metal. It reliably catches tinned leads and shielding cans, and reliably
+rejects black IC bodies and ceramic capacitors.
+
+It cannot catch everything, and this is a limitation of the input rather than
+of the rule:
+
+- **Coloured metals** — gold plating and copper are saturated, so they fall
+  outside an unsaturated-grey test.
+- **Shared materials** — one material can serve both a white plastic housing
+  and a nickel-plated connector shell. There is a single colour for both
+  surfaces, so no colour test can separate them.
+
+Rather than guess harder, use `pcb_output_glb_metal_colors` to name the
+offenders once. Run the export, look at the material list, and list the
+colours that should be metal:
+
+```yaml
+pcb_output_glb_metal_colors: "EDBE51,97A3DA,FFFFFF"
+```
+
+Colours are matched against component materials only, so a colour that also
+appears on a board layer — `FFFFFF` is both a connector shell and the
+silkscreen — affects only the components. Entries that match nothing are
+reported as a warning, which catches typos.
 
 ## Component 3D models
 
