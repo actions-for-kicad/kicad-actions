@@ -225,6 +225,99 @@ inputs:
     description: "Output file name of STEP PCB."
     default: "pcb.step"
 
+  # PCB GLB output
+  pcb_output_glb:
+    description: "Run the GLB (binary glTF) export of the PCB."
+    default: false
+
+  pcb_output_glb_file_name:
+    description: "Output file name of GLB PCB."
+    default: "pcb.glb"
+
+  # GLB visual content
+  pcb_output_glb_soldermask:
+    description: "Export the soldermask layers. Without this the board body is flat-coloured instead."
+    default: true
+
+  pcb_output_glb_silkscreen:
+    description: "Export the silkscreen graphics."
+    default: true
+
+  pcb_output_glb_pads:
+    description: "Export pads. These are the copper you actually see, through the soldermask openings."
+    default: true
+
+  pcb_output_glb_tracks:
+    description: "Export tracks and vias. Hidden under an opaque soldermask, so off by default."
+    default: false
+
+  pcb_output_glb_zones:
+    description: "Export copper zones. Hidden under an opaque soldermask, so off by default."
+    default: false
+
+  pcb_output_glb_inner_copper:
+    description: "Export inner copper layers. Never visible from outside the board."
+    default: false
+
+  pcb_output_glb_components:
+    description: "Include component 3D models."
+    default: true
+
+  pcb_output_glb_board_only:
+    description: "Export only the bare board, with no components."
+    default: false
+
+  pcb_output_glb_component_filter:
+    description: "Only include component 3D models matching this comma-separated list of reference designators. Wildcards supported."
+
+  pcb_output_glb_net_filter:
+    description: "Only include copper items belonging to nets matching this wildcard."
+
+  pcb_output_glb_no_dnp:
+    description: "Exclude 3D models for components marked 'Do not populate'."
+    default: false
+
+  pcb_output_glb_no_unspecified:
+    description: "Exclude 3D models for components with an 'Unspecified' footprint type."
+    default: false
+
+  pcb_output_glb_subst_models:
+    description: "Substitute STEP or IGS models for VRML models with the same name."
+    default: false
+
+  pcb_output_glb_fuse_shapes:
+    description: "Fuse overlapping geometry together. Slower, but reduces coincident surfaces."
+    default: false
+
+  pcb_output_glb_min_distance:
+    description: "Minimum distance between points to treat them as separate ones."
+    default: "0.01mm"
+
+  pcb_output_glb_origin:
+    description: "Origin of the exported model. Options: 'board', 'grid', 'drill', or an explicit offset such as '25.4x25.4mm'."
+    default: "board"
+
+  # GLB post-processing for real-time renderers
+  pcb_output_glb_optimize:
+    description: "Post-process the GLB for real-time renderers such as PlayCanvas, three.js or Babylon: fill in missing PBR values, make the board opaque, enable backface culling, and give nodes and materials readable names."
+    default: true
+
+  pcb_output_glb_center:
+    description: "Recentre the model on the board bounding box so it orbits around itself. Requires 'pcb_output_glb_optimize'."
+    default: true
+
+  pcb_output_glb_scale:
+    description: "Uniform scale applied to the exported model. glTF units are metres, so a 100 mm board is 0.1 units at the default scale of 1."
+    default: "1.0"
+
+  pcb_output_glb_detect_metals:
+    description: "Treat unsaturated mid-grey component colours as bare metal, so leads and shields render metallic instead of as grey plastic."
+    default: true
+
+  pcb_output_glb_keep_transparency:
+    description: "Keep the board, soldermask and silkscreen as blended transparent materials, as KiCad exports them. These sort badly in real-time renderers."
+    default: false
+
   # PCB image output
   pcb_output_image:
     description: "Run the image export of the PCB."

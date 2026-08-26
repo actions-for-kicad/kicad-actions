@@ -9,3 +9,6 @@ fp-info-cache
 *.kicad_*.lck
 sym-lib-table
 fp-lib-table
+
+# Python
+__pycache__/

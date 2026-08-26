@@ -1,0 +1,542 @@
+#!/usr/bin/env python3
+"""Post-process a kicad-cli GLB export into a real-time-renderer-friendly asset.
+
+``kicad-cli pcb export glb`` produces a physically-minded GLB via OpenCASCADE.
+That is a good fit for CAD viewers and a poor one for engines like PlayCanvas,
+three.js or Babylon. This script rewrites the glTF JSON chunk to fix the
+differences. The binary chunk is never touched, so geometry is preserved
+bit-for-bit and the pass is lossless.
+
+What it fixes, and why:
+
+1. Component materials converted from VRML carry a ``baseColorFactor`` and
+   nothing else. glTF defaults the absent ``metallicFactor`` and
+   ``roughnessFactor`` to 1.0, so every part renders as a fully metallic,
+   fully rough surface -- dark and muddy under image-based lighting. We supply
+   sensible PBR values instead.
+
+2. The board body, soldermask and silkscreen are emitted as ``alphaMode:
+   BLEND``. Engines depth-sort transparent meshes per object, so four stacked
+   translucent layers z-fight and pop while orbiting. We make them opaque.
+
+3. Everything is ``doubleSided: true``, which disables backface culling and
+   doubles fragment cost. Winding is verified consistent with the vertex
+   normals in kicad-cli's output, so culling is safe to enable.
+
+4. Nodes are named with OpenCASCADE label paths (``=>[0:1:1:4]``) and
+   materials are ``mat_0``..``mat_n``, neither of which can be targeted from
+   engine script. We name both after what they actually are.
+
+5. The board is exported in metres offset from the origin, so it orbits around
+   a pivot outside itself. We recentre it on its own bounding box.
+
+Requires only the standard library.
+"""
+
+import argparse
+import json
+import struct
+import sys
+from pathlib import Path
+
+GLB_MAGIC = b"glTF"
+CHUNK_JSON = b"JSON"
+CHUNK_BIN = b"BIN\x00"
+
+# kicad-cli names each board-layer mesh "<boardname>_<role>". Component meshes
+# are named after their 3D model instead, and sit under a reference-designator
+# node, so anything unmatched here is treated as a component.
+ROLE_SUFFIXES = (
+    ("_soldermask", "soldermask"),
+    ("_silkscreen", "silkscreen"),
+    ("_copper", "copper"),
+    ("_pad", "pad"),
+    ("_PCB", "board"),
+)
+
+
+def log(msg):
+    print(f"  {msg}")
+
+
+def notice(msg):
+    print(f"::notice::{msg}")
+
+
+def warn(msg):
+    print(f"::warning::{msg}")
+
+
+# --------------------------------------------------------------------------
+# GLB container
+# --------------------------------------------------------------------------
+
+
+def read_glb(path):
+    data = Path(path).read_bytes()
+    if len(data) < 12:
+        raise ValueError(f"{path}: too short to be a GLB")
+    magic, version, length = struct.unpack_from("<4sII", data, 0)
+    if magic != GLB_MAGIC:
+        raise ValueError(f"{path}: not a GLB (magic {magic!r})")
+    if version != 2:
+        raise ValueError(f"{path}: unsupported GLB version {version}")
+
+    gltf = None
+    binary = b""
+    offset = 12
+    while offset + 8 <= min(length, len(data)):
+        clen, ctype = struct.unpack_from("<I4s", data, offset)
+        offset += 8
+        chunk = data[offset:offset + clen]
+        if ctype == CHUNK_JSON:
+            gltf = json.loads(chunk.decode("utf-8"))
+        elif ctype == CHUNK_BIN:
+            binary = chunk
+        offset += clen
+    if gltf is None:
+        raise ValueError(f"{path}: no JSON chunk")
+    return gltf, binary
+
+
+def write_glb(path, gltf, binary):
+    json_bytes = json.dumps(gltf, separators=(",", ":")).encode("utf-8")
+    json_bytes += b" " * (-len(json_bytes) % 4)          # pad with spaces
+    bin_bytes = binary + b"\x00" * (-len(binary) % 4)    # pad with zeroes
+
+    total = 12 + 8 + len(json_bytes)
+    if bin_bytes:
+        total += 8 + len(bin_bytes)
+
+    out = bytearray()
+    out += struct.pack("<4sII", GLB_MAGIC, 2, total)
+    out += struct.pack("<I4s", len(json_bytes), CHUNK_JSON) + json_bytes
+    if bin_bytes:
+        out += struct.pack("<I4s", len(bin_bytes), CHUNK_BIN) + bin_bytes
+    Path(path).write_bytes(out)
+    return total
+
+
+# --------------------------------------------------------------------------
+# Classification
+# --------------------------------------------------------------------------
+
+
+def mesh_role(name):
+    for suffix, role in ROLE_SUFFIXES:
+        if name.endswith(suffix):
+            return role
+    return "component"
+
+
+def dominant_normal_axis(gltf, binary, mesh):
+    """Return the sign of the dominant Y component of a mesh's normals.
+
+    kicad-cli exports soldermask and silkscreen as flat single-sided faces, and
+    emits front and back layers as two meshes with identical names. Their
+    normals point along +Y and -Y respectively, which is how we tell them
+    apart. Returns +1, -1, or 0 when indeterminate.
+    """
+    accessors = gltf.get("accessors", [])
+    views = gltf.get("bufferViews", [])
+    total = 0.0
+    for prim in mesh.get("primitives", []):
+        idx = prim.get("attributes", {}).get("NORMAL")
+        if idx is None:
+            continue
+        acc = accessors[idx]
+        if acc.get("componentType") != 5126 or acc.get("type") != "VEC3":
+            continue
+        view = views[acc["bufferView"]]
+        if view.get("buffer", 0) != 0:
+            continue
+        base = view.get("byteOffset", 0) + acc.get("byteOffset", 0)
+        stride = view.get("byteStride") or 12
+        # Sampling is enough; these meshes are uniformly oriented.
+        count = min(acc["count"], 256)
+        for i in range(count):
+            at = base + i * stride
+            if at + 12 > len(binary):
+                break
+            total += struct.unpack_from("<3f", binary, at)[1]
+    if total > 1e-6:
+        return 1
+    if total < -1e-6:
+        return -1
+    return 0
+
+
+def build_node_index(gltf):
+    """Map mesh index -> (node index, parent node index)."""
+    nodes = gltf.get("nodes", [])
+    parent_of = {}
+    for i, node in enumerate(nodes):
+        for child in node.get("children", []):
+            parent_of[child] = i
+    by_mesh = {}
+    for i, node in enumerate(nodes):
+        if "mesh" in node:
+            by_mesh.setdefault(node["mesh"], (i, parent_of.get(i)))
+    return by_mesh, parent_of
+
+
+# --------------------------------------------------------------------------
+# Bounding box
+# --------------------------------------------------------------------------
+
+
+def mesh_bounds(gltf, mesh):
+    accessors = gltf.get("accessors", [])
+    lo = [float("inf")] * 3
+    hi = [float("-inf")] * 3
+    found = False
+    for prim in mesh.get("primitives", []):
+        idx = prim.get("attributes", {}).get("POSITION")
+        if idx is None:
+            continue
+        acc = accessors[idx]
+        if "min" not in acc or "max" not in acc:
+            continue
+        found = True
+        for axis in range(3):
+            lo[axis] = min(lo[axis], acc["min"][axis])
+            hi[axis] = max(hi[axis], acc["max"][axis])
+    return (lo, hi) if found else None
+
+
+# --------------------------------------------------------------------------
+# Material policy
+# --------------------------------------------------------------------------
+
+
+def rgb_to_sat_val(rgb):
+    r, g, b = rgb[:3]
+    hi, lo = max(r, g, b), min(r, g, b)
+    sat = 0.0 if hi <= 0 else (hi - lo) / hi
+    return sat, hi
+
+
+def looks_like_bare_metal(rgb, low=0.25, high=0.85, sat_max=0.15):
+    """Guess whether a VRML-derived colour represents bare metal.
+
+    Leads, shields and can bodies in KiCad's 3D libraries are mid-grey and
+    nearly unsaturated. White or off-white plastic is also unsaturated but much
+    brighter, so an upper bound on value keeps housings out.
+    """
+    sat, val = rgb_to_sat_val(rgb)
+    return sat < sat_max and low < val < high
+
+
+def set_pbr(material, metallic=None, roughness=None):
+    pbr = material.setdefault("pbrMetallicRoughness", {})
+    if metallic is not None:
+        pbr["metallicFactor"] = round(metallic, 4)
+    if roughness is not None:
+        pbr["roughnessFactor"] = round(roughness, 4)
+
+
+def make_opaque(material):
+    """Force a material opaque, dropping the alpha channel and blend mode."""
+    changed = material.pop("alphaMode", None) == "BLEND"
+    material.pop("alphaCutoff", None)
+    pbr = material.setdefault("pbrMetallicRoughness", {})
+    base = pbr.get("baseColorFactor")
+    if base is not None and len(base) == 4 and base[3] < 1.0:
+        pbr["baseColorFactor"] = list(base[:3]) + [1.0]
+        changed = True
+    return changed
+
+
+# --------------------------------------------------------------------------
+# Main pass
+# --------------------------------------------------------------------------
+
+
+def process(gltf, binary, opts):
+    meshes = gltf.get("meshes", [])
+    nodes = gltf.get("nodes", [])
+    materials = gltf.get("materials", [])
+    stats = {
+        "opaque": 0, "culled": 0, "pbr_fixed": 0,
+        "metal": 0, "renamed_nodes": 0, "renamed_mats": 0,
+    }
+
+    if not meshes:
+        warn("GLB contains no meshes; nothing to post-process.")
+        return stats
+
+    by_mesh, _ = build_node_index(gltf)
+
+    # ---- classify meshes, disambiguating front/back flat-face layers -------
+    roles = {}
+    seen_sides = {}
+    for mi, mesh in enumerate(meshes):
+        role = mesh_role(mesh.get("name", ""))
+        label = role
+        if role in ("soldermask", "silkscreen"):
+            sign = dominant_normal_axis(gltf, binary, mesh)
+            if sign > 0:
+                label = f"{role}_front"
+            elif sign < 0:
+                label = f"{role}_back"
+            else:
+                n = seen_sides.get(role, 0)
+                seen_sides[role] = n + 1
+                label = f"{role}_{n}"
+        roles[mi] = (role, label)
+
+    # ---- map materials to the roles that use them --------------------------
+    mat_roles = {}
+    mat_labels = {}
+    for mi, mesh in enumerate(meshes):
+        role, label = roles[mi]
+        for prim in mesh.get("primitives", []):
+            if "material" in prim:
+                mat_roles.setdefault(prim["material"], set()).add(role)
+                mat_labels.setdefault(prim["material"], set()).add(label)
+
+    # ---- material fixes ---------------------------------------------------
+    PRETTY = {
+        "board": "Board",
+        "soldermask": "SolderMask",
+        "soldermask_front": "SolderMask_Front",
+        "soldermask_back": "SolderMask_Back",
+        "silkscreen": "Silkscreen",
+        "silkscreen_front": "Silkscreen_Front",
+        "silkscreen_back": "Silkscreen_Back",
+        "copper": "Copper",
+        "pad": "Pads",
+        "component": "Component",
+    }
+    mat_counter = {}
+    for idx, material in enumerate(materials):
+        used_by = mat_roles.get(idx, set())
+        # Only apply a role-specific policy when the material is unambiguous.
+        role = next(iter(used_by)) if len(used_by) == 1 else None
+        pbr = material.setdefault("pbrMetallicRoughness", {})
+        base = pbr.get("baseColorFactor", [1.0, 1.0, 1.0, 1.0])
+
+        if not opts.keep_transparency and role in ("board", "soldermask", "silkscreen"):
+            if make_opaque(material):
+                stats["opaque"] += 1
+
+        if role == "board":
+            set_pbr(material, 0.0, opts.board_roughness)
+        elif role == "soldermask":
+            set_pbr(material, 0.0, opts.mask_roughness)
+        elif role == "silkscreen":
+            set_pbr(material, 0.0, opts.silk_roughness)
+        elif role in ("copper", "pad"):
+            # kicad-cli already emits metallic=1.0 / roughness=0.4 here, which
+            # is right for finished copper. Only fill in anything missing.
+            if "metallicFactor" not in pbr:
+                set_pbr(material, 1.0, None)
+            if "roughnessFactor" not in pbr:
+                set_pbr(material, None, opts.copper_roughness)
+        else:
+            # Component materials, or a material shared across roles. Supply
+            # PBR values only where kicad-cli left them absent -- that absence
+            # is what makes glTF fall back to metal=1.0 / rough=1.0.
+            if "metallicFactor" not in pbr and "roughnessFactor" not in pbr:
+                if opts.detect_metals and looks_like_bare_metal(base):
+                    set_pbr(material, opts.metal_metallic, opts.metal_roughness)
+                    stats["metal"] += 1
+                else:
+                    set_pbr(material, opts.component_metallic, opts.component_roughness)
+                stats["pbr_fixed"] += 1
+
+        if not opts.keep_double_sided and material.get("doubleSided"):
+            material["doubleSided"] = False
+            stats["culled"] += 1
+
+        if not opts.keep_names:
+            # Name after the side-specific label where the material belongs to
+            # exactly one, so material names line up with node names.
+            labels = mat_labels.get(idx, set())
+            key = next(iter(labels)) if len(labels) == 1 else role
+            stem = PRETTY.get(key, "Material") if key else "Material"
+            n = mat_counter.get(stem, 0)
+            mat_counter[stem] = n + 1
+            # Keep the first of a kind unsuffixed so names stay readable.
+            new = stem if n == 0 else f"{stem}_{n}"
+            if material.get("name") != new:
+                material["name"] = new
+                stats["renamed_mats"] += 1
+
+    # ---- node and mesh names ---------------------------------------------
+    if not opts.keep_names:
+        NODE_NAMES = {
+            "board": "Board",
+            "soldermask_front": "SolderMask_Front",
+            "soldermask_back": "SolderMask_Back",
+            "silkscreen_front": "Silkscreen_Front",
+            "silkscreen_back": "Silkscreen_Back",
+            "copper": "Copper",
+            "pad": "Pads",
+        }
+        for mi, mesh in enumerate(meshes):
+            role, label = roles[mi]
+            node_idx, parent_idx = by_mesh.get(mi, (None, None))
+            if node_idx is None:
+                continue
+            if role == "component":
+                # The reference designator lives on the parent; give the mesh
+                # node a derived name so both are addressable.
+                parent = nodes[parent_idx] if parent_idx is not None else None
+                refdes = parent.get("name") if parent else None
+                new = f"{refdes}_Model" if refdes else mesh.get("name", "Component")
+            else:
+                new = NODE_NAMES.get(label, label)
+                mesh["name"] = new
+            if nodes[node_idx].get("name") != new:
+                nodes[node_idx]["name"] = new
+                stats["renamed_nodes"] += 1
+
+    # ---- recentre and scale ----------------------------------------------
+    if opts.center or opts.scale != 1.0:
+        # Prefer the board body's bounds: components should not drag the pivot
+        # off the board.
+        board_bounds = None
+        for mi, mesh in enumerate(meshes):
+            if roles[mi][0] == "board":
+                board_bounds = mesh_bounds(gltf, mesh)
+                break
+        if board_bounds is None:
+            for mi, mesh in enumerate(meshes):
+                b = mesh_bounds(gltf, mesh)
+                if b is None:
+                    continue
+                if board_bounds is None:
+                    board_bounds = b
+                else:
+                    board_bounds = (
+                        [min(a, c) for a, c in zip(board_bounds[0], b[0])],
+                        [max(a, c) for a, c in zip(board_bounds[1], b[1])],
+                    )
+
+        if board_bounds is None:
+            warn("Could not determine bounds; skipping recentre/scale.")
+        else:
+            lo, hi = board_bounds
+            centre = [(lo[i] + hi[i]) / 2.0 for i in range(3)]
+            size = [hi[i] - lo[i] for i in range(3)]
+
+            scenes = gltf.setdefault("scenes", [{"nodes": []}])
+            scene = scenes[gltf.get("scene", 0)]
+            old_roots = list(scene.get("nodes", []))
+
+            # kicad-cli emits a single unnamed, untransformed grouping node at
+            # the root. Reuse it when that is what we find, so we don't leave a
+            # redundant node in the hierarchy; otherwise wrap, so that any
+            # transform already present survives.
+            reusable = (
+                len(old_roots) == 1
+                and not nodes[old_roots[0]].get("name")
+                and "mesh" not in nodes[old_roots[0]]
+                and not any(k in nodes[old_roots[0]]
+                            for k in ("matrix", "translation", "rotation", "scale"))
+            )
+            if reusable:
+                target = nodes[old_roots[0]]
+            else:
+                target = {"children": old_roots}
+                nodes.append(target)
+                scene["nodes"] = [len(nodes) - 1]
+
+            target["name"] = opts.root_name or "PCB"
+            if opts.center:
+                target["translation"] = [round(-c, 9) for c in centre]
+            if opts.scale != 1.0:
+                target["scale"] = [opts.scale] * 3
+
+            log(f"board size: {size[0]*1000:.1f} x {size[2]*1000:.1f} x "
+                f"{size[1]*1000:.2f} mm (glTF units are metres)")
+            if opts.center:
+                log(f"recentred by [{-centre[0]:.4f}, {-centre[1]:.4f}, {-centre[2]:.4f}]")
+            if opts.scale != 1.0:
+                log(f"scaled by {opts.scale}")
+    elif opts.root_name:
+        scenes = gltf.setdefault("scenes", [{"nodes": []}])
+        scene = scenes[gltf.get("scene", 0)]
+        for r in scene.get("nodes", []):
+            if not nodes[r].get("name"):
+                nodes[r]["name"] = opts.root_name
+
+    return stats
+
+
+def build_parser():
+    p = argparse.ArgumentParser(
+        prog="glb_postprocess.py",
+        description="Make a kicad-cli GLB export render well in real-time engines.",
+    )
+    p.add_argument("input", help="input .glb produced by kicad-cli")
+    p.add_argument("-o", "--output", help="output path (default: edit in place)")
+    p.add_argument("--root-name", default="PCB", help="name for the root node")
+
+    p.add_argument("--center", dest="center", action="store_true", default=True,
+                   help="recentre the model on the board bounding box (default)")
+    p.add_argument("--no-center", dest="center", action="store_false",
+                   help="keep kicad-cli's origin")
+    p.add_argument("--scale", type=float, default=1.0,
+                   help="uniform scale applied to the root node (default 1.0, metres)")
+
+    p.add_argument("--keep-transparency", action="store_true",
+                   help="leave board/mask/silkscreen as alphaMode BLEND")
+    p.add_argument("--keep-double-sided", action="store_true",
+                   help="leave backface culling disabled")
+    p.add_argument("--keep-names", action="store_true",
+                   help="leave OpenCASCADE node and mat_N material names alone")
+
+    p.add_argument("--detect-metals", dest="detect_metals", action="store_true",
+                   default=True, help="treat unsaturated mid-grey component "
+                                      "colours as bare metal (default)")
+    p.add_argument("--no-detect-metals", dest="detect_metals", action="store_false",
+                   help="treat every component material as a dielectric")
+
+    p.add_argument("--board-roughness", type=float, default=0.85)
+    p.add_argument("--mask-roughness", type=float, default=0.45)
+    p.add_argument("--silk-roughness", type=float, default=0.9)
+    p.add_argument("--copper-roughness", type=float, default=0.4)
+    p.add_argument("--component-metallic", type=float, default=0.0)
+    p.add_argument("--component-roughness", type=float, default=0.5)
+    p.add_argument("--metal-metallic", type=float, default=0.9)
+    p.add_argument("--metal-roughness", type=float, default=0.35)
+    return p
+
+
+def main(argv=None):
+    opts = build_parser().parse_args(argv)
+    src = Path(opts.input)
+    if not src.is_file():
+        print(f"::error::GLB post-process input '{src}' not found.")
+        return 1
+
+    try:
+        gltf, binary = read_glb(src)
+    except (ValueError, json.JSONDecodeError, struct.error) as exc:
+        print(f"::error::Could not read '{src}': {exc}")
+        return 1
+
+    before = src.stat().st_size
+    print(f"Post-processing '{src.name}' for real-time rendering:")
+    stats = process(gltf, binary, opts)
+
+    dest = Path(opts.output) if opts.output else src
+    try:
+        after = write_glb(dest, gltf, binary)
+    except OSError as exc:
+        print(f"::error::Could not write '{dest}': {exc}")
+        return 1
+
+    log(f"{stats['pbr_fixed']} component materials given PBR values "
+        f"({stats['metal']} detected as bare metal)")
+    log(f"{stats['opaque']} materials forced opaque, "
+        f"{stats['culled']} switched to backface culling")
+    log(f"renamed {stats['renamed_nodes']} nodes and {stats['renamed_mats']} materials")
+    notice(f"GLB post-processed: {dest.name} ({before/1024:.1f} KiB -> {after/1024:.1f} KiB)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
