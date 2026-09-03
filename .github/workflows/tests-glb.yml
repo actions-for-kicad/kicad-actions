@@ -1,0 +1,81 @@
+name: GLB tests
+
+# Kept separate from tests.yml so that the GLB feature adds no lines to a file
+# upstream edits regularly, and syncing from actions-for-kicad/kicad-actions
+# stays conflict-free.
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "**/*.md"
+  pull_request:
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "**/*.md"
+
+jobs:
+  test-pcb-glb:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - test_name: glb
+            expected_file: pcb.glb
+          - test_name: glb-copper
+            expected_file: pcb.glb
+            pcb_output_glb_tracks: true
+            pcb_output_glb_zones: true
+          - test_name: glb-board-only
+            expected_file: board.glb
+            pcb_output_glb_file_name: board.glb
+            pcb_output_glb_board_only: true
+          - test_name: glb-raw
+            expected_file: pcb.glb
+            # Quoted so the '||' default below does not treat it as unset.
+            pcb_output_glb_optimize: "false"
+          - test_name: glb-scaled
+            expected_file: pcb.glb
+            pcb_output_glb_scale: "1000.0"
+          - test_name: glb-metal-colors
+            expected_file: pcb.glb
+            pcb_output_glb_metal_colors: "A5A392,#227205"
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Run GLB export
+        uses: ./
+        with:
+          pcb_file_name: tests/kicad-project-success/kicad-project.kicad_pcb
+          footprint_libraries: "test-fp-library=tests/kicad-project-success/test-fp-library.pretty"
+          pcb_output_glb: true
+          pcb_output_glb_file_name: ${{ matrix.pcb_output_glb_file_name || 'pcb.glb' }}
+          pcb_output_glb_tracks: ${{ matrix.pcb_output_glb_tracks || false }}
+          pcb_output_glb_zones: ${{ matrix.pcb_output_glb_zones || false }}
+          pcb_output_glb_board_only: ${{ matrix.pcb_output_glb_board_only || false }}
+          pcb_output_glb_optimize: ${{ matrix.pcb_output_glb_optimize || 'true' }}
+          pcb_output_glb_scale: ${{ matrix.pcb_output_glb_scale || '1.0' }}
+          pcb_output_glb_metal_colors: ${{ matrix.pcb_output_glb_metal_colors || null }}
+
+      - name: Verify output file
+        run: |
+          file="${{ matrix.expected_file }}"
+          if [[ ! -f "$file" ]]; then
+            echo "::error::Expected output file '$file' not found!"
+            exit 1
+          fi
+          # KiCad's jobset writer has shipped a gzipped STEP under a '.glb'
+          # name before (kicad#23706), so existence alone proves nothing.
+          # Assert the glTF container magic.
+          magic=$(head -c 4 "$file")
+          if [[ "$magic" != "glTF" ]]; then
+            echo "::error::'$file' is not a binary glTF file (magic '$magic')."
+            exit 1
+          fi
+        shell: bash

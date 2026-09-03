@@ -3,6 +3,6 @@ FROM kicad/kicad:10.0
 USER root
 
 COPY entrypoint.sh /entrypoint.sh
-COPY glb_postprocess.py /glb_postprocess.py
+COPY glb/ /glb/
 
 ENTRYPOINT ["/entrypoint.sh"]

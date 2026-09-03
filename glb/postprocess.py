@@ -576,7 +576,7 @@ def process(gltf, binary, opts):
 
 def build_parser():
     p = argparse.ArgumentParser(
-        prog="glb_postprocess.py",
+        prog="postprocess.py",
         description="Make a kicad-cli GLB export render well in real-time engines.",
     )
     p.add_argument("input", help="input .glb produced by kicad-cli")

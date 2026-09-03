@@ -227,7 +227,7 @@ inputs:
 
   # PCB GLB output
   pcb_output_glb:
-    description: "Run the GLB (binary glTF) export of the PCB."
+    description: "Run the GLB (binary glTF) export of the PCB. See docs/glb-export.md for what the defaults do and why."
     default: false
 
   pcb_output_glb_file_name:
