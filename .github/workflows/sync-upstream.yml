@@ -1,0 +1,158 @@
+name: Sync from upstream
+
+# GitHub has no cross-repository event for "the repo I forked was updated", so
+# this polls upstream on a schedule. The manual and repository_dispatch
+# triggers are there for when you do not want to wait for the next poll.
+#
+# The result always arrives as a pull request, never a push to main: the
+# auto-resolved regions are two insertions that git could not order on its own,
+# and that ordering deserves a human glance before it reaches anyone consuming
+# this action.
+
+on:
+  schedule:
+    # Mondays 05:00 UTC. Weekly matches what this repo already does elsewhere
+    # to stay clear of API rate limits.
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [upstream-updated]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+env:
+  SYNC_BRANCH: automated/sync-upstream
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create sync branch
+        run: git checkout -B "$SYNC_BRANCH"
+
+      - name: Merge upstream
+        id: sync
+        run: ./scripts/sync-upstream.sh --commit
+
+      # The script proves the merge is structurally sound. This proves the
+      # merged action still builds and produces a real GLB, which is the thing
+      # a bad auto-resolution would actually break.
+      - name: Smoke test the merged action
+        if: steps.sync.outputs.updated == 'true'
+        uses: ./
+        with:
+          pcb_file_name: tests/kicad-project-success/kicad-project.kicad_pcb
+          footprint_libraries: "test-fp-library=tests/kicad-project-success/test-fp-library.pretty"
+          pcb_output_glb: true
+
+      - name: Verify smoke test output
+        if: steps.sync.outputs.updated == 'true'
+        run: |
+          [[ -f pcb.glb ]] || { echo "::error::merged action produced no pcb.glb"; exit 1; }
+          magic=$(head -c 4 pcb.glb)
+          [[ "$magic" == "glTF" ]] ||
+            { echo "::error::pcb.glb is not a binary glTF (magic '$magic')"; exit 1; }
+          rm -f pcb.glb
+          # The smoke test must not leave anything behind for the push below.
+          [[ -z "$(git status --porcelain)" ]] ||
+            { echo "::error::smoke test dirtied the tree"; git status --short; exit 1; }
+
+      - name: Push sync branch
+        if: steps.sync.outputs.updated == 'true'
+        run: git push --force-with-lease origin "$SYNC_BRANCH"
+
+      - name: Open or update pull request
+        if: steps.sync.outputs.updated == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMITS: ${{ steps.sync.outputs.commits }}
+          RESOLVED: ${{ steps.sync.outputs.resolved }}
+        run: |
+          # Written via heredocs at the block's base indent: markdown treats
+          # four leading spaces as a code fence, so an indented body would
+          # render the whole PR description as code.
+          if [[ -n "$RESOLVED" ]]; then
+          cat > /tmp/resolution.md <<EOF
+          Auto-resolved by keeping both sides: \`${RESOLVED// /\`, \`}\`.
+
+          Those files conflicted because upstream inserted at the same anchor this
+          fork inserts at. Keeping both is the only correct answer, but **check
+          that the ordering reads sensibly** in the diff.
+          EOF
+          else
+            echo "Merged cleanly, no conflicts." > /tmp/resolution.md
+          fi
+
+          cat > /tmp/body.md <<EOF
+          Merges $COMMITS new commit(s) from [actions-for-kicad/kicad-actions](https://github.com/actions-for-kicad/kicad-actions).
+
+          $(cat /tmp/resolution.md)
+
+          Verified by \`scripts/sync-upstream.sh\`: no conflict markers, valid bash,
+          no duplicate \`action.yml\` keys, GLB markers intact. The merged action was
+          then built and run, and produced a valid GLB.
+
+          > Note: this PR was opened by \`GITHUB_TOKEN\`, so the test workflows do
+          > not run on it automatically. The smoke test in the sync run is the
+          > coverage you have unless you push a commit here.
+          EOF
+
+          existing=$(gh pr list --head "$SYNC_BRANCH" --state open --json number --jq '.[0].number')
+          if [[ -n "$existing" ]]; then
+            gh pr edit "$existing" --body-file /tmp/body.md
+            gh pr comment "$existing" --body "Updated with the latest upstream commits."
+            echo "updated PR #$existing"
+          else
+            gh pr create \
+              --base main \
+              --head "$SYNC_BRANCH" \
+              --title "Sync from upstream ($COMMITS commit(s))" \
+              --body-file /tmp/body.md
+          fi
+
+      - name: Report failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Upstream sync needs manual attention"
+          cat > /tmp/issue.md <<EOF
+          The automated upstream sync stopped. Most often this means a conflict
+          appeared in a file this fork is not supposed to modify, which is the
+          signal that the insert-only invariant behind the auto-resolution no
+          longer holds — see \`scripts/sync-upstream.sh\`.
+
+          Resolve it locally:
+
+          \`\`\`
+          git fetch upstream
+          git merge upstream/main
+          \`\`\`
+
+          Run log: $RUN_URL
+          EOF
+
+          existing=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number')
+          if [[ -n "$existing" ]]; then
+            gh issue comment "$existing" --body "Sync failed again: $RUN_URL"
+          else
+            gh issue create --title "$title" --body-file /tmp/issue.md
+          fi

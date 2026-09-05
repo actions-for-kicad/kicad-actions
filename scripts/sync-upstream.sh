@@ -36,6 +36,12 @@ declare -A REQUIRED_ONCE=(
 die() { echo "error: $*" >&2; exit 1; }
 note() { echo "==> $*"; }
 
+# Report results to the caller when running inside GitHub Actions.
+emit() {
+  [[ -n "${GITHUB_OUTPUT:-}" ]] && echo "$1=$2" >>"$GITHUB_OUTPUT"
+  return 0
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --commit)   AUTO_COMMIT=1; shift ;;
@@ -68,10 +74,12 @@ git fetch --quiet upstream "$UPSTREAM_BRANCH"
 target="upstream/$UPSTREAM_BRANCH"
 if git merge-base --is-ancestor "$target" HEAD; then
   note "already up to date with $target; nothing to do"
+  emit updated false
   exit 0
 fi
 
-note "merging $target ($(git rev-list --count HEAD.."$target") new commit(s))"
+new_commits=$(git rev-list --count HEAD.."$target")
+note "merging $target ($new_commits new commit(s))"
 
 # ---------------------------------------------------------------------------
 # Merge, resolving insertion-vs-insertion conflicts by keeping both sides
@@ -161,6 +169,10 @@ fi
 # ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------
+
+emit updated true
+emit commits "$new_commits"
+emit resolved "${resolved[*]:-}"
 
 if [[ ${#resolved[@]} -gt 0 ]]; then
   note "auto-resolved by keeping both sides: ${resolved[*]}"
