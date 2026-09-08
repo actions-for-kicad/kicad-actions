@@ -177,6 +177,21 @@ def unique_name(desired, taken):
     return name
 
 
+def pretty_from_label(label, table):
+    """Pretty name for a label, including the side/index-suffixed forms.
+
+    The side suffixes are generated (``copper_front``, ``soldermask_0``,
+    ``copper_2`` for an inner layer), so the tables cannot enumerate them.
+    Returns None when nothing matches, leaving the caller to decide.
+    """
+    if label in table:
+        return table[label]
+    base, _, tail = label.rpartition("_")
+    if base in table and (tail.isdigit() or tail in ("front", "back")):
+        return f"{table[base]}_{tail.title()}"
+    return None
+
+
 def dominant_normal_axis(gltf, binary, mesh):
     """Return the sign of the dominant Y component of a mesh's normals.
 
@@ -342,6 +357,38 @@ def process(gltf, binary, opts):
                 label = f"{role}_{n}"
         roles[mi] = (role, label)
 
+    # Copper and pads are not flat single-sided faces, so the normal test
+    # above cannot place them. Order them by height instead: geometry is
+    # stable across exports, mesh order is not, and an unstable name silently
+    # retargets any override written against it downstream -- the same failure
+    # the colour-derived material names exist to avoid.
+    for side_role in ("copper", "pad"):
+        members = [mi for mi in sorted(roles) if roles[mi][0] == side_role]
+        if len(members) < 2:
+            continue
+        heights = {}
+        for mi in members:
+            b = mesh_bounds(gltf, meshes[mi])
+            heights[mi] = (b[0][1] + b[1][1]) / 2.0 if b else 0.0
+        if len(set(heights.values())) == 1:
+            continue  # no height information to separate them by
+        ordered = sorted(members, key=lambda mi: (-heights[mi], mi))
+        for n, mi in enumerate(ordered):
+            if n == 0:
+                label = f"{side_role}_front"
+            elif n == len(ordered) - 1:
+                label = f"{side_role}_back"
+            else:
+                label = f"{side_role}_{n}"
+            roles[mi] = (side_role, label)
+
+    # mesh_role() falls back to "component", so a renamed kicad-cli suffix
+    # would quietly give every board layer component treatment.
+    if not any(r == "board" for r, _ in roles.values()):
+        warn("No board-body mesh was recognised, so kicad-cli's mesh naming "
+             "may have changed. Board layers are getting component treatment "
+             "and the recentre is falling back to all-mesh bounds.")
+
     # ---- map materials to the roles that use them --------------------------
     mat_roles = {}
     mat_labels = {}
@@ -422,7 +469,8 @@ def process(gltf, binary, opts):
                 # to exactly one, so material names line up with node names.
                 labels = mat_labels.get(idx, set())
                 key = next(iter(labels)) if len(labels) == 1 else role
-                new = unique_name(PRETTY.get(key, "Material"), taken_mats)
+                new = unique_name(
+                    pretty_from_label(key, PRETTY) or "Material", taken_mats)
             else:
                 # Name component materials after their colour rather than a
                 # running index. An index shifts whenever the board gains or
@@ -436,10 +484,15 @@ def process(gltf, binary, opts):
 
     # ---- node and mesh names ---------------------------------------------
     if not opts.keep_names:
+        # The bare "soldermask"/"silkscreen" keys are what pretty_from_label
+        # falls back to for the indeterminate-normal labels (soldermask_0),
+        # which would otherwise keep their raw lowercase form.
         NODE_NAMES = {
             "board": "Board",
+            "soldermask": "SolderMask",
             "soldermask_front": "SolderMask_Front",
             "soldermask_back": "SolderMask_Back",
+            "silkscreen": "Silkscreen",
             "silkscreen_front": "Silkscreen_Front",
             "silkscreen_back": "Silkscreen_Back",
             "copper": "Copper",
@@ -447,7 +500,7 @@ def process(gltf, binary, opts):
         }
         taken_nodes = set()
 
-        def owning_refdes(node_idx):
+        def owning_refdes(node_idx, ignore=()):
             """Nearest ancestor name that is a reference designator.
 
             A multi-solid STEP model gets an extra OpenCASCADE assembly node
@@ -461,7 +514,7 @@ def process(gltf, binary, opts):
             while cur is not None and cur not in seen:
                 seen.add(cur)
                 name = nodes[cur].get("name")
-                if name and not is_occt_label(name):
+                if name and not is_occt_label(name) and cur not in ignore:
                     return name
                 cur = parent_of.get(cur)
             return None
@@ -478,20 +531,31 @@ def process(gltf, binary, opts):
                 stem = f"{refdes}_Model" if refdes else mesh.get("name", "Component")
                 new = unique_name(stem, taken_nodes)
             else:
-                new = NODE_NAMES.get(label, label)
+                # Board roles need unique_name() as much as components do: two
+                # meshes can share one label, and a duplicate name is not
+                # addressable from engine script.
+                new = unique_name(
+                    pretty_from_label(label, NODE_NAMES) or label, taken_nodes)
                 mesh["name"] = new
-                taken_nodes.add(new)
             if nodes[node_idx].get("name") != new:
                 nodes[node_idx]["name"] = new
                 stats["renamed_nodes"] += 1
 
         # Any intermediate OpenCASCADE assembly node left over is still
         # unaddressable, so name it after the part it belongs to.
-        for i, node in enumerate(nodes):
-            if not is_occt_label(node.get("name", "")):
-                continue
-            refdes = owning_refdes(i)
-            node["name"] = unique_name(
+        # Snapshot the set first and have the walk ignore it. The loop writes
+        # names that owning_refdes() would otherwise read straight back, so a
+        # chain three levels deep would yield 'J3_Assembly_Assembly'. A node
+        # carrying a mesh is not an assembly -- it is an instanced mesh the
+        # pass above skipped, since build_node_index keeps one node per mesh.
+        occt_nodes = [
+            i for i, node in enumerate(nodes)
+            if is_occt_label(node.get("name", "")) and "mesh" not in node
+        ]
+        occt_set = set(occt_nodes)
+        for i in occt_nodes:
+            refdes = owning_refdes(i, ignore=occt_set)
+            nodes[i]["name"] = unique_name(
                 f"{refdes}_Assembly" if refdes else "Assembly", taken_nodes
             )
             stats["renamed_nodes"] += 1
