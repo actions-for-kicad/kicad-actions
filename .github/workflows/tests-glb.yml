@@ -79,3 +79,82 @@ jobs:
             exit 1
           fi
         shell: bash
+
+      # The magic bytes prove it is a GLB, not that post-processing did its
+      # job. A recentre that composes wrongly with --scale, an OpenCASCADE
+      # label left in a node name or a board layer still set to BLEND all
+      # produce a perfectly valid GLB, so assert the outcomes directly.
+      - name: Verify post-processing
+        if: ${{ matrix.pcb_output_glb_optimize != 'false' }}
+        run: |
+          python3 - "${{ matrix.expected_file }}" "${{ matrix.pcb_output_glb_scale || '1.0' }}" <<'PY'
+          import json, re, struct, sys
+
+          path, scale = sys.argv[1], float(sys.argv[2])
+          data = open(path, "rb").read()
+          off, gltf = 12, None
+          while off < len(data):
+              ln, kind = struct.unpack_from("<I4s", data, off)
+              if kind == b"JSON":
+                  gltf = json.loads(data[off + 8:off + 8 + ln])
+                  break
+              off += 8 + ln
+          assert gltf is not None, "no JSON chunk"
+
+          nodes = gltf.get("nodes", [])
+          fails = []
+
+          # 1. nothing unaddressable left behind
+          occt = re.compile(r"^=>\[?[\d:]+\]?$")
+          stray = [n.get("name") for n in nodes if occt.match(n.get("name") or "")]
+          if stray:
+              fails.append(f"OpenCASCADE label paths left in node names: {stray[:5]}")
+          matn = [m.get("name") for m in gltf.get("materials", [])
+                  if re.match(r"^mat_\d+$", m.get("name") or "")]
+          if matn:
+              fails.append(f"unnamed materials left behind: {matn[:5]}")
+
+          # 2. board layers must be opaque, or they z-fight while orbiting
+          blend = [m.get("name") for m in gltf.get("materials", [])
+                   if m.get("alphaMode") == "BLEND"]
+          if blend:
+              fails.append(f"materials still alphaMode BLEND: {blend[:5]}")
+
+          # 3. the recentre must survive composition with the scale. glTF
+          #    composes a node as M = T * R * S, so the translation is applied
+          #    after the scale and has to be pre-multiplied by it.
+          board = None
+          for mesh in gltf.get("meshes", []):
+              if (mesh.get("name") or "").endswith("_PCB") or mesh.get("name") == "Board":
+                  board = mesh
+                  break
+          if board is None:
+              print("note: no board mesh found; skipping the recentre check")
+          else:
+              acc = gltf["accessors"]
+              lo = [float("inf")] * 3
+              hi = [float("-inf")] * 3
+              for prim in board.get("primitives", []):
+                  a = acc[prim["attributes"]["POSITION"]]
+                  if "min" not in a or "max" not in a:
+                      continue
+                  for i in range(3):
+                      lo[i] = min(lo[i], a["min"][i])
+                      hi[i] = max(hi[i], a["max"][i])
+              centre = [(lo[i] + hi[i]) / 2.0 for i in range(3)]
+              root = nodes[gltf["scenes"][gltf.get("scene", 0)]["nodes"][0]]
+              t = root.get("translation", [0.0, 0.0, 0.0])
+              sc = root.get("scale", [1.0, 1.0, 1.0])
+              final = [sc[i] * centre[i] + t[i] for i in range(3)]
+              tol = 1e-4 * max(1.0, scale)
+              if any(abs(v) > tol for v in final):
+                  fails.append(
+                      f"board centre sits at {[round(v, 4) for v in final]} after "
+                      f"the root transform, not the origin (scale={scale}, "
+                      f"translation={t})")
+
+          for f in fails:
+              print(f"::error::{path}: {f}")
+          sys.exit(1 if fails else 0)
+          PY
+        shell: bash
