@@ -9,7 +9,10 @@ if [[ $INPUT_PCB_OUTPUT_GLB == "true" ]]; then
     exit 1
   fi
 
-  if ! [[ $INPUT_PCB_OUTPUT_GLB_SCALE =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+  # The second pattern rejects an all-zero value: it parses as a number but
+  # writes "scale": [0,0,0], which collapses the model to a point.
+  if ! [[ $INPUT_PCB_OUTPUT_GLB_SCALE =~ ^[0-9]+(\.[0-9]+)?$ ]] ||
+     [[ $INPUT_PCB_OUTPUT_GLB_SCALE =~ ^0+(\.0+)?$ ]]; then
     echo "::error::Invalid GLB scale. Make sure your GLB scale is a valid positive number."
     exit 1
   fi
@@ -48,11 +51,21 @@ if [[ $INPUT_PCB_OUTPUT_GLB == "true" ]]; then
   [[ -n $INPUT_PCB_OUTPUT_GLB_NET_FILTER ]] && cmd+=(--net-filter "$INPUT_PCB_OUTPUT_GLB_NET_FILTER")
   [[ -n $INPUT_PCB_OUTPUT_GLB_MIN_DISTANCE ]] && cmd+=(--min-distance "$INPUT_PCB_OUTPUT_GLB_MIN_DISTANCE")
 
+  # Anything not a named origin is passed through as an explicit offset, so it
+  # has to be validated here: kicad-cli rejects a malformed one with exit code
+  # 2, which the check below deliberately treats as success, leaving a
+  # capitalised 'Board' or a typo to surface only as "was not created".
   case "$INPUT_PCB_OUTPUT_GLB_ORIGIN" in
     board) ;;
     grid) cmd+=(--grid-origin) ;;
     drill) cmd+=(--drill-origin) ;;
-    *) cmd+=(--user-origin "$INPUT_PCB_OUTPUT_GLB_ORIGIN") ;;
+    *)
+      if [[ ! $INPUT_PCB_OUTPUT_GLB_ORIGIN =~ ^-?[0-9]+(\.[0-9]+)?x-?[0-9]+(\.[0-9]+)?(mm|in)$ ]]; then
+        echo "::error::Invalid GLB origin '$INPUT_PCB_OUTPUT_GLB_ORIGIN'. Supported origins are 'board', 'grid', 'drill', or an explicit offset such as '25.4x25.4mm'."
+        exit 1
+      fi
+      cmd+=(--user-origin "$INPUT_PCB_OUTPUT_GLB_ORIGIN")
+      ;;
   esac
 
   set +e
