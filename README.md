@@ -540,6 +540,22 @@ Required: `false`\
 \
 Description: Run a predefined KiCad jobset file.
 
+## `pcb_output_glb`
+
+Required: `false`\
+Default: `false`\
+\
+Description: Run the GLB (binary glTF) export of the PCB, post-processed for real-time renderers such as PlayCanvas, three.js and Babylon.
+
+## `pcb_output_glb_file_name`
+
+Required: `false`\
+Default: `pcb.glb`\
+\
+Description: Output file name of GLB PCB.
+
+> **Note:** a further 22 `pcb_output_glb_*` inputs tune the exported layers, materials, node naming and transform. See [docs/glb-export.md](docs/glb-export.md) for the full list, what the defaults do and why.
+
 # 📤 Outputs
 
 This action exports multiple files based on the inputs that are given.
