@@ -624,14 +624,23 @@ def process(gltf, binary, opts):
 
             target["name"] = opts.root_name or "PCB"
             if opts.center:
-                target["translation"] = [round(-c, 9) for c in centre]
+                # glTF composes a node transform as M = T * R * S, so the
+                # translation is applied *after* the scale. Pre-multiply it, or
+                # the pivot ends up (scale - 1) * centre away from the board --
+                # at the documented scale of 1000 that is the whole defect the
+                # recentre exists to remove, just 1000x larger.
+                target["translation"] = [
+                    round(-c * opts.scale, 9) for c in centre
+                ]
             if opts.scale != 1.0:
                 target["scale"] = [opts.scale] * 3
 
             log(f"board size: {size[0]*1000:.1f} x {size[2]*1000:.1f} x "
                 f"{size[1]*1000:.2f} mm (glTF units are metres)")
             if opts.center:
-                log(f"recentred by [{-centre[0]:.4f}, {-centre[1]:.4f}, {-centre[2]:.4f}]")
+                applied = target["translation"]
+                log(f"recentred by [{applied[0]:.4f}, {applied[1]:.4f}, "
+                    f"{applied[2]:.4f}]")
             if opts.scale != 1.0:
                 log(f"scaled by {opts.scale}")
     elif opts.root_name:
