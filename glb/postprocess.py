@@ -414,8 +414,19 @@ def process(gltf, binary, opts):
     }
     for idx, material in enumerate(materials):
         used_by = mat_roles.get(idx, set())
-        # Only apply a role-specific policy when the material is unambiguous.
-        role = next(iter(used_by)) if len(used_by) == 1 else None
+        board_used = {r for r in used_by if r in BOARD_ROLES}
+        if len(used_by) == 1:
+            role = next(iter(used_by))
+        elif board_used and not used_by - board_used:
+            # Shared across board layers only -- tracks and pads commonly
+            # share one copper material. Still a board material: it must not
+            # keep alphaMode BLEND, must stay out of reach of --metal-colors,
+            # and must not be named after its colour. Pick the policy
+            # deterministically by role precedence.
+            role = sorted(board_used, key=BOARD_ROLES.index)[0]
+        else:
+            # Genuinely ambiguous (a board layer sharing with a component).
+            role = None
         pbr = material.setdefault("pbrMetallicRoughness", {})
         base = pbr.get("baseColorFactor", [1.0, 1.0, 1.0, 1.0])
 
