@@ -132,8 +132,31 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          MANUAL_CONFLICT: ${{ steps.sync.outputs.manual_conflict }}
         run: |
-          title="Upstream sync needs manual attention"
+          # A MANUAL_FILES conflict is expected and benign, so it must not be
+          # reported as an invariant breach; only an unexpected stop is.
+          if [[ -n "$MANUAL_CONFLICT" ]]; then
+            title="Upstream sync needs a manual merge"
+          cat > /tmp/issue.md <<EOF
+          Upstream and this fork both changed \`$MANUAL_CONFLICT\`, which is on the
+          fork's manual list: it is a file this fork inserts into, but whose content
+          is not union-merged because machine-interleaved prose reads worse than a
+          human placing it. **Nothing is wrong with the invariant** — this is the
+          routine hand-merge that placement was chosen knowing about.
+
+          Resolve it locally:
+
+          \`\`\`
+          git fetch upstream
+          git merge upstream/main
+          # keep both sides in $MANUAL_CONFLICT, then finish the merge
+          \`\`\`
+
+          Run log: $RUN_URL
+          EOF
+          else
+            title="Upstream sync needs manual attention"
           cat > /tmp/issue.md <<EOF
           The automated upstream sync stopped. Most often this means a conflict
           appeared in a file this fork is not supposed to modify, which is the
@@ -149,6 +172,7 @@ jobs:
 
           Run log: $RUN_URL
           EOF
+          fi
 
           existing=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number')
           if [[ -n "$existing" ]]; then
