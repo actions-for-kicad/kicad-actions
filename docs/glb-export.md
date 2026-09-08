@@ -46,7 +46,7 @@ is never touched, so the pass is lossless.
 | Component materials | `baseColorFactor` only, no `metallicFactor` or `roughnessFactor` | glTF defaults both to `1.0`, so every part is fully metallic and fully rough — dark and muddy under image-based lighting | Fill in plausible PBR values, detecting bare metal by colour |
 | Transparency | board, soldermask and silkscreen are all `alphaMode: BLEND` | Transparent meshes are depth-sorted per object, so the stacked layers z-fight and pop while orbiting | Make them opaque |
 | Backface culling | `doubleSided: true` on everything | Culling is disabled, doubling fragment cost | Turn it off, having verified triangle winding matches the vertex normals |
-| Naming | nodes are OpenCASCADE label paths (`=>[0:1:1:4]`), materials are `mat_0`…`mat_n` | Nothing in the scene can be addressed from engine script | Name them `Board`, `SolderMask_Front`, `Silkscreen_Front`, `Pads`, `Copper`, and components after their reference designator |
+| Naming | nodes are OpenCASCADE label paths (`=>[0:1:1:4]`), materials are `mat_0`…`mat_n` | Nothing in the scene can be addressed from engine script | Name them `Board`, `SolderMask_Front`, `Silkscreen_Front`, `Pads`, `Copper_Front`, and components after their reference designator |
 | Origin | the board sits offset from the origin, in metres | The model orbits around a pivot outside itself | Recentre on the board bounding box |
 
 The resulting scene graph looks like this, and every name is stable:
@@ -57,6 +57,8 @@ PCB
 ├── SolderMask_Front
 ├── SolderMask_Back
 ├── Silkscreen_Front
+├── Copper_Front
+├── Copper_Back
 ├── Pads
 ├── D101
 │   └── D101_Model
@@ -69,6 +71,14 @@ PCB
 A component whose 3D model contains several solids gets an extra assembly
 level, because that is how OpenCASCADE structures it. Those intermediate nodes
 are named after the part they belong to rather than left as label paths.
+
+Two-sided layers are split by geometry, not by mesh order: the layers are
+ranked by the height of their bounding-box centre, so `Copper_Front` is the
+copper that is actually on top and stays that name across exports. With
+`pcb_output_glb_inner_copper: true` the layers in between come out as
+`Copper_1`, `Copper_2` and so on, front to back. If a board somehow yields
+several copper meshes at the same height there is nothing to rank them by, and
+they fall back to `Copper` and `Copper_2` in mesh order.
 
 Set `pcb_output_glb_optimize: false` to get `kicad-cli`'s output untouched.
 
@@ -271,6 +281,13 @@ Default: `board`\
 Description: Origin of the exported model. Options: `board`, `grid`, `drill`,
 or an explicit offset such as `25.4x25.4mm`.
 
+The three named origins are matched exactly, in lower case; anything else is
+treated as an explicit offset and must look like `<x>x<y>mm` or `<x>x<y>in`
+(negatives allowed). A malformed value fails the export with an error naming
+it, rather than being passed to `kicad-cli` — which rejects it with an exit
+code the export deliberately treats as success, so it would otherwise surface
+only as a missing output file.
+
 ## `pcb_output_glb_optimize`
 
 Required: `false`\
@@ -296,6 +313,11 @@ Default: `1.0`\
 Description: Uniform scale applied to the exported model. glTF units are
 metres, so a 100 mm board is 0.1 units at the default scale. Use `1000` if you
 want the model to arrive in millimetres.
+
+Must be a positive number; `0` is rejected rather than written out as a scale
+that would collapse the model to a point. Combines correctly with
+`pcb_output_glb_center` — the recentre is applied in the scaled space, so the
+board stays on the pivot at any scale.
 
 ## `pcb_output_glb_detect_metals`
 
