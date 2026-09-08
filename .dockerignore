@@ -1,0 +1,3 @@
+# Keep local Python bytecode out of the build context: COPY glb/ /glb/
+# would otherwise bake stale .pyc files into the image.
+**/__pycache__/
