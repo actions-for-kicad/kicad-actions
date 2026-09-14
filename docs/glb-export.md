@@ -30,9 +30,12 @@ board, turning tracks and zones on roughly doubles the triangle count for no
 change to the render. Pads stay on because they are the copper that shows
 through the mask openings.
 
-If you want the see-through look where the routing is visible under a
-translucent mask, turn on `pcb_output_glb_tracks` and
-`pcb_output_glb_zones` together with `pcb_output_glb_keep_transparency`.
+If you want the routing visible, the way it is on a real board where the mask
+is a thin translucent coat over the copper, turn on `pcb_output_glb_tracks` and
+`pcb_output_glb_zones` and set `pcb_output_glb_mask_opacity` to `0.83`, KiCad's
+own value. Only the mask stays blended; the board body and silkscreen remain
+opaque, so tracks and tented vias read as tinted relief rather than as bare
+copper. See [`pcb_output_glb_mask_opacity`](#pcb_output_glb_mask_opacity).
 
 ## What the post-processing does
 
@@ -44,7 +47,7 @@ is never touched, so the pass is lossless.
 | Issue | What KiCad emits | What the renderer does with it | Fix |
 | --- | --- | --- | --- |
 | Component materials | `baseColorFactor` only, no `metallicFactor` or `roughnessFactor` | glTF defaults both to `1.0`, so every part is fully metallic and fully rough — dark and muddy under image-based lighting | Fill in plausible PBR values, detecting bare metal by colour |
-| Transparency | board, soldermask and silkscreen are all `alphaMode: BLEND` | Transparent meshes are depth-sorted per object, so the stacked layers z-fight and pop while orbiting | Make them opaque |
+| Transparency | board, soldermask and silkscreen are all `alphaMode: BLEND` | Transparent meshes are depth-sorted per object, so the stacked layers z-fight and pop while orbiting | Make them opaque. With `pcb_output_glb_mask_opacity` below 1 the mask alone stays blended, which a single layer above opaque geometry survives |
 | Backface culling | `doubleSided: true` on everything | Culling is disabled, doubling fragment cost | Turn it off, having verified triangle winding matches the vertex normals |
 | Naming | nodes are OpenCASCADE label paths (`=>[0:1:1:4]`), materials are `mat_0`…`mat_n` | Nothing in the scene can be addressed from engine script | Name them `Board`, `SolderMask_Front`, `Silkscreen_Front`, `Pads`, `Copper_Front`, and components after their reference designator |
 | Origin | the board sits offset from the origin, in metres | The model orbits around a pivot outside itself | Recentre on the board bounding box |
@@ -337,6 +340,22 @@ Description: Comma-separated hex colours whose component materials are forced
 metallic, for example `EDBE51,97A3DA`. Overrides the colour heuristic. Board
 layers are never affected, so listing `FFFFFF` cannot make the silkscreen
 metallic. See [Component materials](#component-materials).
+
+## `pcb_output_glb_mask_opacity`
+
+Required: `false`\
+Default: `1.0`\
+\
+Description: Opacity of the soldermask, above 0 and up to 1. At `1.0` the mask
+is opaque and hides every copper item under it, which is why only pads are
+exported by default. Below 1 the mask keeps `alphaMode: BLEND` at this alpha
+while the board body and silkscreen stay opaque. Copper under the mask then
+shows through tinted, the way tracks and tented vias look on a real board.
+`0.83` is what KiCad itself uses. Pair it with `pcb_output_glb_tracks` and
+`pcb_output_glb_zones`, or there is nothing under the mask to see; the action
+warns when that happens. A single blended layer above opaque geometry sorts
+correctly in real-time renderers. It is the full stack of blended layers that
+`pcb_output_glb_keep_transparency` restores which does not.
 
 ## `pcb_output_glb_keep_transparency`
 

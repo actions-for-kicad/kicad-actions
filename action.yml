@@ -321,6 +321,10 @@ inputs:
     description: "Keep the board, soldermask and silkscreen as blended transparent materials, as KiCad exports them. These sort badly in real-time renderers."
     default: false
 
+  pcb_output_glb_mask_opacity:
+    description: "Opacity of the soldermask, above 0 and up to 1. Below 1 the mask alone stays a blended material, so copper under it shows through tinted like on a real board. Pair with 'pcb_output_glb_tracks' and 'pcb_output_glb_zones'. KiCad's own value is 0.83. Requires 'pcb_output_glb_optimize'."
+    default: "1.0"
+
   # PCB image output
   pcb_output_image:
     description: "Run the image export of the PCB."

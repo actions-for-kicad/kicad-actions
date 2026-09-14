@@ -18,6 +18,9 @@ What it fixes, and why:
 2. The board body, soldermask and silkscreen are emitted as ``alphaMode:
    BLEND``. Engines depth-sort transparent meshes per object, so four stacked
    translucent layers z-fight and pop while orbiting. We make them opaque.
+   With ``--mask-opacity`` below 1 the soldermask alone stays blended: one
+   blended layer above opaque geometry sorts correctly, and copper under it
+   then reads as tinted relief, the way tracks look on a real board.
 
 3. Everything is ``doubleSided: true``, which disables backface culling and
    doubles fragment cost. Winding is verified consistent with the vertex
@@ -310,6 +313,15 @@ def make_opaque(material):
     return changed
 
 
+def make_translucent(material, opacity):
+    """Keep a material blended at a fixed alpha."""
+    material["alphaMode"] = "BLEND"
+    material.pop("alphaCutoff", None)
+    pbr = material.setdefault("pbrMetallicRoughness", {})
+    base = list(pbr.get("baseColorFactor", [1.0, 1.0, 1.0, 1.0]))[:3]
+    pbr["baseColorFactor"] = base + [round(opacity, 4)]
+
+
 # --------------------------------------------------------------------------
 # Main pass
 # --------------------------------------------------------------------------
@@ -323,7 +335,7 @@ def process(gltf, binary, opts):
     nodes = gltf.get("nodes", [])
     materials = gltf.get("materials", [])
     stats = {
-        "opaque": 0, "culled": 0, "pbr_fixed": 0, "metal": 0,
+        "opaque": 0, "translucent": 0, "culled": 0, "pbr_fixed": 0, "metal": 0,
         "forced_metal": 0, "renamed_nodes": 0, "renamed_mats": 0,
     }
 
@@ -431,7 +443,15 @@ def process(gltf, binary, opts):
         base = pbr.get("baseColorFactor", [1.0, 1.0, 1.0, 1.0])
 
         if not opts.keep_transparency and role in ("board", "soldermask", "silkscreen"):
-            if make_opaque(material):
+            if role == "soldermask" and opts.mask_opacity < 1.0:
+                # The sorting problem is a *stack* of blended layers. A single
+                # blended mask above an opaque board and under opaque
+                # silkscreen is drawn after every opaque mesh and depth-tested
+                # against them, so it cannot be misordered. Copper under it
+                # then shows through tinted, like on a real board.
+                make_translucent(material, opts.mask_opacity)
+                stats["translucent"] += 1
+            elif make_opaque(material):
                 stats["opaque"] += 1
 
         if role == "board":
@@ -676,6 +696,10 @@ def build_parser():
 
     p.add_argument("--keep-transparency", action="store_true",
                    help="leave board/mask/silkscreen as alphaMode BLEND")
+    p.add_argument("--mask-opacity", type=float, default=1.0,
+                   help="soldermask opacity, above 0 and up to 1 (default 1.0, "
+                        "opaque). Below 1 the mask alone stays blended so copper "
+                        "under it shows through tinted; 0.83 is KiCad's own value")
     p.add_argument("--keep-double-sided", action="store_true",
                    help="leave backface culling disabled")
     p.add_argument("--keep-names", action="store_true",
@@ -705,6 +729,9 @@ def build_parser():
 
 def main(argv=None):
     opts = build_parser().parse_args(argv)
+    if not 0.0 < opts.mask_opacity <= 1.0:
+        print(f"::error::--mask-opacity must be above 0 and up to 1, got {opts.mask_opacity}.")
+        return 1
     src = Path(opts.input)
     if not src.is_file():
         print(f"::error::GLB post-process input '{src}' not found.")
@@ -733,6 +760,9 @@ def main(argv=None):
         log(f"{stats['forced_metal']} materials forced metallic by --metal-colors")
     log(f"{stats['opaque']} materials forced opaque, "
         f"{stats['culled']} switched to backface culling")
+    if stats["translucent"]:
+        log(f"{stats['translucent']} soldermask materials kept translucent "
+            f"at opacity {opts.mask_opacity:g}")
     log(f"renamed {stats['renamed_nodes']} nodes and {stats['renamed_mats']} materials")
     notice(f"GLB post-processed: {dest.name} ({before/1024:.1f} KiB -> {after/1024:.1f} KiB)")
     return 0

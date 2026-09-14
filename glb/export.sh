@@ -17,6 +17,21 @@ if [[ $INPUT_PCB_OUTPUT_GLB == "true" ]]; then
     exit 1
   fi
 
+  # Zero would make the mask invisible; above one is not an opacity.
+  if [[ -n $INPUT_PCB_OUTPUT_GLB_MASK_OPACITY ]] &&
+     { ! [[ $INPUT_PCB_OUTPUT_GLB_MASK_OPACITY =~ ^(0(\.[0-9]+)?|1(\.0+)?)$ ]] ||
+       [[ $INPUT_PCB_OUTPUT_GLB_MASK_OPACITY =~ ^0+(\.0+)?$ ]]; }; then
+    echo "::error::Invalid GLB mask opacity '$INPUT_PCB_OUTPUT_GLB_MASK_OPACITY'. Use a number above 0 and up to 1, for example 0.83."
+    exit 1
+  fi
+
+  # A translucent mask with nothing exported under it looks the same as an
+  # opaque one, which is easy to mistake for the option not working.
+  if [[ -n $INPUT_PCB_OUTPUT_GLB_MASK_OPACITY && $INPUT_PCB_OUTPUT_GLB_MASK_OPACITY != 1* &&
+        $INPUT_PCB_OUTPUT_GLB_TRACKS != "true" && $INPUT_PCB_OUTPUT_GLB_ZONES != "true" ]]; then
+    echo "::warning::pcb_output_glb_mask_opacity is below 1 but neither pcb_output_glb_tracks nor pcb_output_glb_zones is enabled, so there is no copper under the mask to show through."
+  fi
+
   if [[ $INPUT_PCB_OUTPUT_GLB_COMPONENTS == "true" &&
         $INPUT_PCB_OUTPUT_GLB_BOARD_ONLY != "true" && ! -d $model_dir ]]; then
     echo "::warning::3D model directory '$model_dir' does not exist, so components using the standard KiCad 3D libraries will be missing from the GLB. Commit the models to your repository, or set $model_dir_var to where they live."
@@ -93,6 +108,7 @@ if [[ $INPUT_PCB_OUTPUT_GLB == "true" ]]; then
       [[ $INPUT_PCB_OUTPUT_GLB_CENTER == "true" ]] && pp+=(--center) || pp+=(--no-center)
       [[ $INPUT_PCB_OUTPUT_GLB_DETECT_METALS == "true" ]] && pp+=(--detect-metals) || pp+=(--no-detect-metals)
       [[ $INPUT_PCB_OUTPUT_GLB_KEEP_TRANSPARENCY == "true" ]] && pp+=(--keep-transparency)
+      [[ -n $INPUT_PCB_OUTPUT_GLB_MASK_OPACITY ]] && pp+=(--mask-opacity "$INPUT_PCB_OUTPUT_GLB_MASK_OPACITY")
       [[ -n $INPUT_PCB_OUTPUT_GLB_SCALE ]] && pp+=(--scale "$INPUT_PCB_OUTPUT_GLB_SCALE")
       [[ -n $INPUT_PCB_OUTPUT_GLB_METAL_COLORS ]] && pp+=(--metal-colors "$INPUT_PCB_OUTPUT_GLB_METAL_COLORS")
       "${pp[@]}"
