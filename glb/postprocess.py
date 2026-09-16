@@ -342,6 +342,17 @@ def process(gltf, binary, opts):
     metal_colours, bad_colours = parse_color_list(opts.metal_colors)
     if bad_colours:
         warn("Ignoring unparseable --metal-colors entries: " + ", ".join(bad_colours))
+
+    # Normalised through the same parser, so '#1a1a1a' and '111' work here too.
+    # A bad value warns and is dropped rather than failing the export: losing a
+    # colour tweak is not worth failing a board release over.
+    if opts.board_color:
+        board_colours, bad_board = parse_color_list(opts.board_color)
+        if bad_board or len(board_colours) != 1:
+            warn(f"Ignoring unparseable --board-color {opts.board_color!r}; expected one hex colour.")
+            opts.board_color = ""
+        else:
+            opts.board_color = next(iter(board_colours))
     matched_colours = set()
     taken_mats = set()
 
@@ -455,6 +466,16 @@ def process(gltf, binary, opts):
                 stats["opaque"] += 1
 
         if role == "board":
+            # A translucent mask is translucent over the whole board, not only
+            # over copper, so KiCad's default tan substrate reads as brown
+            # everywhere the copper is absent. Overriding the substrate keeps
+            # bare areas the colour of the mask while copper still shows
+            # through. Alpha is left alone: the board stays opaque.
+            if opts.board_color:
+                rgb = [int(opts.board_color[i:i + 2], 16) / 255.0 for i in (0, 2, 4)]
+                existing = pbr.get("baseColorFactor", [1.0, 1.0, 1.0, 1.0])
+                pbr["baseColorFactor"] = [round(c, 4) for c in rgb] + [existing[3] if len(existing) > 3 else 1.0]
+                stats["recoloured"] = stats.get("recoloured", 0) + 1
             set_pbr(material, 0.0, opts.board_roughness)
         elif role == "soldermask":
             set_pbr(material, 0.0, opts.mask_roughness)
@@ -716,6 +737,9 @@ def build_parser():
                         "the colour heuristic. Board layers are never affected, "
                         "so listing FFFFFF cannot make the silkscreen metallic.")
 
+    p.add_argument("--board-color", default="",
+                   help="Six-digit hex overriding the board substrate colour, "
+                        "e.g. 1A1A1A. Only meaningful with --mask-opacity below 1.")
     p.add_argument("--board-roughness", type=float, default=0.85)
     p.add_argument("--mask-roughness", type=float, default=0.45)
     p.add_argument("--silk-roughness", type=float, default=0.9)

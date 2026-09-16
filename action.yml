@@ -325,6 +325,14 @@ inputs:
     description: "Opacity of the soldermask, above 0 and up to 1. Below 1 the mask alone stays a blended material, so copper under it shows through tinted like on a real board. Pair with 'pcb_output_glb_tracks' and 'pcb_output_glb_zones'. KiCad's own value is 0.83. Requires 'pcb_output_glb_optimize'."
     default: "1.0"
 
+  pcb_output_glb_cut_vias:
+    description: "Cut via holes through the board body. Without it the body stays solid where the vias are, so a via reads as a copper ring lying on the surface rather than a plated hole."
+    default: true
+
+  pcb_output_glb_board_color:
+    description: "Six-digit hex overriding the board substrate colour, for example '1A1A1A'. Only useful with 'pcb_output_glb_mask_opacity' below 1: the mask is translucent everywhere, not only over copper, so KiCad's default tan substrate shows through as brown across the whole board. Setting this dark keeps bare areas reading as the mask colour while copper still shows through. Requires 'pcb_output_glb_optimize'."
+    default: ""
+
   # PCB image output
   pcb_output_image:
     description: "Run the image export of the PCB."

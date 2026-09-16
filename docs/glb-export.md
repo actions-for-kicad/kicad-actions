@@ -145,6 +145,33 @@ in KiCad 8 that refers to `${KICAD8_3DMODEL_DIR}` would otherwise lose every
 component when exported by KiCad 10 — the GUI migrates those references, but
 `kicad-cli` does not.
 
+## Vias
+
+`pcb_output_glb_cut_vias` drills the via holes through the board body and is on
+by default. Via barrels alone do not read as holes: with the body left solid a
+via is a copper ring lying on an unbroken surface. The barrels come from the
+conductor layers, the hole comes from this, and you want both.
+
+## Making a dark board look dark
+
+A translucent mask is translucent over the *whole* board, not only over copper,
+so KiCad's default tan substrate shows through as brown everywhere the copper
+is absent — the board reads brown rather than black even when the stackup says
+`(color "Black")`, because the mask colour is doing what it is told and the
+substrate underneath is not black.
+
+`pcb_output_glb_board_color` overrides the substrate. For a black-mask board:
+
+```yaml
+pcb_output_glb_tracks: true
+pcb_output_glb_zones: true
+pcb_output_glb_mask_opacity: "0.83"
+pcb_output_glb_board_color: "1A1A1A"
+```
+
+Bare areas then read as the mask colour, while copper still shows through
+tinted. The substrate stays opaque; only its colour changes.
+
 ## Notes for PlayCanvas
 
 - glTF units are metres, so a 100 mm board arrives as 0.1 units. Either scale

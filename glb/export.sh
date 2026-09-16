@@ -49,12 +49,13 @@ if [[ $INPUT_PCB_OUTPUT_GLB == "true" ]]; then
   [[ $INPUT_PCB_OUTPUT_GLB_ZONES == "true" ]] && cmd+=(--include-zones)
   [[ $INPUT_PCB_OUTPUT_GLB_INNER_COPPER == "true" ]] && cmd+=(--include-inner-copper)
 
-  # With no conductor layers exported, via barrels are not generated, so the
-  # holes have to be cut into the board body explicitly or the board looks
-  # solid where the vias should be.
-  if [[ $INPUT_PCB_OUTPUT_GLB_TRACKS != "true" && $INPUT_PCB_OUTPUT_GLB_ZONES != "true" ]]; then
-    cmd+=(--cut-vias-in-body)
-  fi
+  # The board body is not drilled unless this is asked for, whether or not
+  # conductor layers are exported. This used to be conditional on tracks and
+  # zones both being off, on the assumption that via barrels alone read as
+  # holes -- they do not. With conductors on and the body left solid, the
+  # barrel is a copper ring sitting on an unbroken surface, which is worse
+  # than the case the condition was written for.
+  [[ $INPUT_PCB_OUTPUT_GLB_CUT_VIAS == "true" ]] && cmd+=(--cut-vias-in-body)
 
   [[ $INPUT_PCB_OUTPUT_GLB_COMPONENTS != "true" ]] && cmd+=(--no-components)
   [[ $INPUT_PCB_OUTPUT_GLB_BOARD_ONLY == "true" ]] && cmd+=(--board-only)
@@ -109,6 +110,7 @@ if [[ $INPUT_PCB_OUTPUT_GLB == "true" ]]; then
       [[ $INPUT_PCB_OUTPUT_GLB_DETECT_METALS == "true" ]] && pp+=(--detect-metals) || pp+=(--no-detect-metals)
       [[ $INPUT_PCB_OUTPUT_GLB_KEEP_TRANSPARENCY == "true" ]] && pp+=(--keep-transparency)
       [[ -n $INPUT_PCB_OUTPUT_GLB_MASK_OPACITY ]] && pp+=(--mask-opacity "$INPUT_PCB_OUTPUT_GLB_MASK_OPACITY")
+      [[ -n $INPUT_PCB_OUTPUT_GLB_BOARD_COLOR ]] && pp+=(--board-color "$INPUT_PCB_OUTPUT_GLB_BOARD_COLOR")
       [[ -n $INPUT_PCB_OUTPUT_GLB_SCALE ]] && pp+=(--scale "$INPUT_PCB_OUTPUT_GLB_SCALE")
       [[ -n $INPUT_PCB_OUTPUT_GLB_METAL_COLORS ]] && pp+=(--metal-colors "$INPUT_PCB_OUTPUT_GLB_METAL_COLORS")
       "${pp[@]}"
