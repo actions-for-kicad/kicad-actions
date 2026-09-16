@@ -1,0 +1,46 @@
+name: Identity guard
+
+# Everything this fork adds on top of upstream is published as the org. The
+# hooks in scripts/hooks enforce that before a push leaves a configured clone,
+# but hooks are per-clone configuration: a fresh clone, another machine, or a
+# commit made through the GitHub web UI never runs them.
+#
+# This job is the backstop for exactly that case. It cannot prevent the leak --
+# by the time it runs the commit is already public -- but it turns a silent
+# leak into a failing check on the very next push, which is the difference
+# between finding out now and finding out months later.
+#
+# Runs on GitHub-hosted runners by design. It is a pure-git check needing no
+# secrets, and this public repo has no self-hosted runners attached to it.
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["hb-*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: identity-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  identity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          # The check walks this fork's whole commit range against upstream,
+          # so a shallow clone is not enough.
+          fetch-depth: 0
+
+      - name: Check commit and tag identity
+        # The whole fork range, not just what this push added: a bad commit
+        # that slipped in while the guard was absent then surfaces too. The
+        # identity configured on the runner is irrelevant here and is not
+        # checked -- CI does not author commits.
+        run: scripts/check-identity.sh --commits --tags

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#
+# Refuse to build a commit under a non-org identity.
+#
+# This is the cheap, early gate: it fails before the commit object exists, so
+# there is nothing to amend or rewrite afterwards. The pre-push hook is the one
+# that actually guards what becomes public; this one just means you find out
+# now instead of fifteen commits later.
+#
+set -euo pipefail
+
+exec "$(git rev-parse --show-toplevel)/scripts/check-identity.sh" --config
