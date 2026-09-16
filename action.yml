@@ -378,6 +378,14 @@ inputs:
     description: "Rotation of the image PCB. Format: 'x,y,z'."
     default: "0,0,0"
 
+  pcb_output_image_autoframe:
+    description: "Crop the rendered image to the board using its alpha channel, so the board is centred and the dead margin is trimmed. kicad-cli aims the camera at the board origin rather than the board's visual centre, so a rotated or off-origin board sits off-centre; measuring the render settles that without guessing a zoom. Needs 'pcb_output_image_background' set to 'transparent'. Changes the output dimensions: the result is the board plus the margin, not the requested width and height."
+    default: false
+
+  pcb_output_image_autoframe_margin:
+    description: "Transparent border autoframing keeps, as a fraction of the cropped size. Default '0.04'."
+    default: "0.04"
+
   # Jobset
   jobset_file_name:
     description: "Run a predefined KiCad jobset file."

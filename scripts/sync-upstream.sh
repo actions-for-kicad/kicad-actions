@@ -41,9 +41,9 @@ MANUAL_FILES=(README.md)
 # Markers proving the GLB feature survived the merge intact. Matched as whole
 # lines, so the leading indentation is part of the marker.
 declare -A REQUIRED_ONCE=(
-  ["entrypoint.sh"]="source /glb/setup.sh|  source /glb/export.sh"
+  ["entrypoint.sh"]="source /glb/setup.sh|  source /glb/export.sh|    source /img/autoframe.sh"
   ["action.yml"]="  pcb_output_glb:"
-  ["Dockerfile"]="COPY glb/ /glb/|FROM kicad/kicad:10.0-full"
+  ["Dockerfile"]="COPY glb/ /glb/|COPY img/ /img/|FROM kicad/kicad:10.0-full"
   ["README.md"]="## \`pcb_output_glb\`"
 )
 
@@ -166,15 +166,17 @@ if grep -rInE '^(<{7}|={7}|>{7})( |$)' --exclude-dir=.git . >/dev/null 2>&1; the
 fi
 
 bash -n entrypoint.sh || abort "entrypoint.sh is not valid bash after merging"
-for f in glb/*.sh; do
+for f in glb/*.sh img/*.sh; do
   bash -n "$f" || abort "$f is not valid bash after merging"
 done
 if command -v python3 >/dev/null; then
-  # Compiled in memory: py_compile would drop glb/__pycache__ into the tree,
+  # Compiled in memory: py_compile would drop __pycache__ into the tree,
   # and the traceback is the only thing that says *where* the syntax error is.
-  py_err=$(python3 -c "f='glb/postprocess.py'; compile(open(f).read(), f, 'exec')" 2>&1) ||
-    abort "glb/postprocess.py does not compile after merging:
+  for f in glb/postprocess.py img/autoframe.py; do
+    py_err=$(python3 -c "f='$f'; compile(open(f).read(), f, 'exec')" 2>&1) ||
+      abort "$f does not compile after merging:
 $py_err"
+  done
 else
   echo "==> note: python3 absent, skipping the postprocess.py compile check" >&2
 fi

@@ -172,6 +172,36 @@ pcb_output_glb_board_color: "1A1A1A"
 Bare areas then read as the mask colour, while copper still shows through
 tinted. The substrate stays opaque; only its colour changes.
 
+## Framing the rendered image
+
+`kicad-cli` aims the camera at the board origin, not at the board's visual
+centre, so a rotated or off-origin board sits off-centre in the frame and can
+run off the sides. Choosing a zoom to compensate does not really fix it — the
+problem is where the board sits, not how big it is, and the board outline does
+not account for perspective, component height or where the origin happens to
+be.
+
+`pcb_output_image_autoframe` measures the render instead. On a transparent
+background every pixel the board covers has a non-zero alpha, so the board's
+screen-space bounding box is exactly its non-transparent extent; cropping to
+that box centres the board by construction and trims the dead margin with it.
+
+```yaml
+pcb_output_image_background: transparent
+pcb_output_image_autoframe: true
+pcb_output_image_autoframe_margin: "0.04"
+```
+
+It changes the output dimensions: the result is the board plus the margin, not
+the requested width and height. Render generously and let the crop decide the
+final size. It does not scale — a tight crop of a transparent PNG is what a
+consumer wants anyway, and resampling without an imaging library would mean
+shipping a resampler.
+
+Needs a PNG with an alpha channel. An opaque background, a JPEG, or anything
+that is not an 8-bit RGBA PNG warns and leaves the image as rendered, because a
+missing crop is cosmetic and a corrupted release asset is not.
+
 ## Notes for PlayCanvas
 
 - glTF units are metres, so a 100 mm board arrives as 0.1 units. Either scale
