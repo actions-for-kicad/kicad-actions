@@ -123,11 +123,20 @@ reported as a warning, which catches typos.
 
 ## Component 3D models
 
-The `kicad/kicad` base image ships footprints and symbols but **no 3D model
-libraries**, so components referencing the standard KiCad libraries are
-silently dropped and you get a bare board. To get components in your GLB,
-commit the models alongside your project and point the footprints at them with
-a relative path or a project variable.
+This fork builds on `kicad/kicad:10.0-full`, which ships the stock KiCad 3D
+model library at `/usr/share/kicad/3dmodels`, so footprints referencing
+`${KICAD10_3DMODEL_DIR}` and friends export with their meshes.
+
+The plain `kicad/kicad:10.0` tag upstream uses does **not**: the official
+Dockerfile clones `kicad-packages3D` only under `--build-arg include_3d=true`,
+which is what the `-full` tags are built with. On the plain tag every
+standard-library model resolves to a path that does not exist and is silently
+dropped, leaving a bare board — the failure is invisible because a missing
+model is not an error.
+
+Parts outside the stock library still need their models committed alongside the
+project and referenced with `${KIPRJMOD}` or a relative path. That remains the
+right approach for vendor meshes; it is no longer required for stock parts.
 
 The action also aliases the legacy `KICAD6_3DMODEL_DIR` through
 `KICAD11_3DMODEL_DIR` variables to the current version's model directory.
@@ -215,8 +224,9 @@ Required: `false`\
 Default: `true`\
 \
 Description: Include component 3D models. See
-[Component 3D models](#component-3d-models) — the base image ships none, so
-the models have to come from your repository.
+[Component 3D models](#component-3d-models) — stock KiCad models come from the
+`-full` base image; anything outside the stock library comes from your
+repository.
 
 ## `pcb_output_glb_board_only`
 

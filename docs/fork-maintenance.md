@@ -106,10 +106,22 @@ pushing it.
 
 ## Staying insert-only
 
-The GLB feature only ever *inserts* lines into files upstream also edits, and
-modifies no existing upstream line. That invariant is what lets
-`scripts/sync-upstream.sh` union-merge conflicts unattended, and it is checked
-by `git diff upstream/main HEAD` showing zero deletions.
+The GLB feature only ever *inserts* lines into the files
+`scripts/sync-upstream.sh` union-merges — `action.yml` and `entrypoint.sh` —
+and modifies no existing upstream line in them. That is what lets the sync
+resolve their conflicts unattended: two insertions competing for one anchor
+always merge as "keep both".
+
+There is exactly one deliberate exception, added 2026-09-16. `Dockerfile`'s
+`FROM` is changed to the `-full` image tag, because the plain tag ships no 3D
+model library and every stock component is silently dropped from STEP and GLB
+output without it. `Dockerfile` is not union-merged, so the exception does not
+weaken the auto-resolution: if upstream edits that line the merge conflicts and
+stops for a human. What it does mean is that `git diff upstream/main HEAD` is
+no longer zero-deletions, so that is not the invariant check any more — the
+`REQUIRED_ONCE` markers in the sync script are, and `Dockerfile` now has one
+for the `-full` tag so a hand-resolution cannot quietly restore upstream's line
+and take the meshes with it.
 
 Put new work in `glb/`, `docs/`, `scripts/` or a new workflow file rather than
 in `entrypoint.sh`, `action.yml` or `README.md` where you can help it. If a

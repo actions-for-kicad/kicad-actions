@@ -2,12 +2,19 @@
 #
 # Sync this fork from actions-for-kicad/kicad-actions.
 #
-# The GLB feature is deliberately built so that it only ever *inserts* lines
-# into files upstream also edits -- it modifies no existing upstream line (see
-# docs/glb-export.md). That invariant is what makes auto-resolution safe: the
-# only conflicts that can arise are two insertions competing for the same
-# anchor, and the answer is always "keep both", which is what a union merge
-# does.
+# The GLB feature is insert-only in every file that is union-merged below: it
+# adds lines and modifies no existing upstream line there (see
+# docs/glb-export.md). That is what makes auto-resolution safe -- the only
+# conflicts that can arise in those files are two insertions competing for the
+# same anchor, and the answer is always "keep both", which is what a union
+# merge does.
+#
+# The one deliberate exception is Dockerfile's FROM line, which this fork
+# changes to the -full image tag because the plain tag ships no 3D model
+# library. Dockerfile is not union-merged, so the exception costs nothing here:
+# if upstream touches that line the merge conflicts and stops for a human,
+# which is the correct outcome. The REQUIRED_ONCE marker below is what catches
+# a hand-resolution that quietly takes upstream's side and drops the meshes.
 #
 # The invariant is not enforced by git, so this script verifies the merged
 # result rather than trusting it, and aborts the merge if anything fails.
@@ -36,7 +43,7 @@ MANUAL_FILES=(README.md)
 declare -A REQUIRED_ONCE=(
   ["entrypoint.sh"]="source /glb/setup.sh|  source /glb/export.sh"
   ["action.yml"]="  pcb_output_glb:"
-  ["Dockerfile"]="COPY glb/ /glb/"
+  ["Dockerfile"]="COPY glb/ /glb/|FROM kicad/kicad:10.0-full"
   ["README.md"]="## \`pcb_output_glb\`"
 )
 
