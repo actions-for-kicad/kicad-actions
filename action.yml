@@ -386,6 +386,22 @@ inputs:
     description: "Transparent border autoframing keeps, as a fraction of the cropped size. Default '0.04'."
     default: "0.04"
 
+  pcb_output_image_webp:
+    description: "Also write the rendered image as WebP, next to the PNG or JPEG rather than instead of it. kicad-cli renders PNG and JPEG only, so this converts the render it just wrote: the same picture, in the format a web page wants. Runs after 'pcb_output_image_autoframe', so the WebP is framed the same way."
+    default: false
+
+  pcb_output_image_webp_file_name:
+    description: "Output file name of the WebP image. Must end in '.webp'. Empty takes the render's own name with the extension swapped, so 'pcb.png' gives 'pcb.webp'."
+    default: ""
+
+  pcb_output_image_webp_quality:
+    description: "WebP quality, an integer from 0 to 100. Alpha is always encoded losslessly, so a transparent render keeps a clean edge when composited. Ignored when 'pcb_output_image_webp_lossless' is set."
+    default: "82"
+
+  pcb_output_image_webp_lossless:
+    description: "Encode the WebP losslessly. A board render is flat colour and sharp silkscreen, which compresses better losslessly than a photograph would, but the file is still several times the lossy one."
+    default: false
+
   # Jobset
   jobset_file_name:
     description: "Run a predefined KiCad jobset file."

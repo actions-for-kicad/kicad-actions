@@ -444,6 +444,7 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
     [[ $INPUT_PCB_OUTPUT_IMAGE_FLOOR == "true" ]] && cmd+=(--floor)
     "${cmd[@]}" "$INPUT_PCB_FILE_NAME"
     source /img/autoframe.sh
+    source /img/webp.sh
   fi
 fi
 

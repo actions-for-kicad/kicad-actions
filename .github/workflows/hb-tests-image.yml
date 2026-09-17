@@ -1,0 +1,159 @@
+name: Image tests
+
+# Covers the fork's additions to the image export. Kept separate from
+# tests.yml for the same reason hb-tests-glb.yml is: that file is edited
+# upstream regularly, and adding no lines to it keeps the sync conflict-free.
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "**/*.md"
+  pull_request:
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "**/*.md"
+
+jobs:
+  test-pcb-image-webp:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - test_name: webp-derived-name
+            expected_render: pcb.png
+            expected_webp: pcb.webp
+          - test_name: webp-explicit-name
+            expected_render: pcb.png
+            expected_webp: board.webp
+            pcb_output_image_webp_file_name: board.webp
+          - test_name: webp-lossless
+            expected_render: pcb.png
+            expected_webp: pcb.webp
+            # Quoted so the '||' default below does not treat it as unset.
+            pcb_output_image_webp_lossless: "true"
+            expect_lossless: "true"
+          - test_name: webp-from-jpeg
+            expected_render: image.jpg
+            expected_webp: image.webp
+            pcb_output_image_file_name: image.jpg
+          # Autoframing rewrites the render in place, so a WebP made before it
+          # would be framed differently from the PNG it is supposed to match.
+          # The dimension check below is what catches that ordering slipping.
+          - test_name: webp-autoframed
+            expected_render: pcb.png
+            expected_webp: pcb.webp
+            pcb_output_image_background: transparent
+            pcb_output_image_autoframe: "true"
+            expect_cropped: "true"
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Run image export
+        uses: ./
+        with:
+          pcb_file_name: tests/kicad-project-success/kicad-project.kicad_pcb
+          footprint_libraries: "test-fp-library=tests/kicad-project-success/test-fp-library.pretty"
+          pcb_output_image: true
+          pcb_output_image_file_name: ${{ matrix.pcb_output_image_file_name || 'pcb.png' }}
+          pcb_output_image_width: 800
+          pcb_output_image_height: 600
+          pcb_output_image_background: ${{ matrix.pcb_output_image_background || 'default' }}
+          pcb_output_image_autoframe: ${{ matrix.pcb_output_image_autoframe || false }}
+          pcb_output_image_webp: true
+          pcb_output_image_webp_file_name: ${{ matrix.pcb_output_image_webp_file_name || null }}
+          pcb_output_image_webp_lossless: ${{ matrix.pcb_output_image_webp_lossless || false }}
+
+      - name: Verify output files
+        run: |
+          for file in "${{ matrix.expected_render }}" "${{ matrix.expected_webp }}"; do
+            if [[ ! -f "$file" ]]; then
+              echo "::error::Expected output file '$file' not found!"
+              exit 1
+            fi
+          done
+        shell: bash
+
+      # The WebP is a conversion of the render, so the two have to agree on
+      # what they are a picture of. Existence proves neither the container
+      # format nor that the conversion saw the final render.
+      - name: Verify WebP
+        run: |
+          python3 - "${{ matrix.expected_render }}" "${{ matrix.expected_webp }}" \
+                    "${{ matrix.expect_lossless || 'false' }}" \
+                    "${{ matrix.expect_cropped || 'false' }}" <<'PY'
+          import sys
+
+          render, webp, want_lossless, want_cropped = sys.argv[1:5]
+          want_lossless = want_lossless == "true"
+          want_cropped = want_cropped == "true"
+          fails = []
+
+          def png_size(path):
+              d = open(path, "rb").read()
+              assert d[:8] == b"\x89PNG\r\n\x1a\n", f"{path} is not a PNG"
+              return (int.from_bytes(d[16:20], "big"),
+                      int.from_bytes(d[20:24], "big"))
+
+          def webp_info(path):
+              """(coding, width, height) by walking the RIFF chunks."""
+              d = open(path, "rb").read()
+              if d[:4] != b"RIFF" or d[8:12] != b"WEBP":
+                  return None, None, None
+              off, coding, size = 12, None, None
+              while off + 8 <= len(d):
+                  fourcc = d[off:off + 4]
+                  n = int.from_bytes(d[off + 4:off + 8], "little")
+                  p = d[off + 8:off + 8 + n]
+                  if fourcc == b"VP8X":
+                      # Canvas size, stored as 24-bit minus-one values.
+                      size = (int.from_bytes(p[4:7], "little") + 1,
+                              int.from_bytes(p[7:10], "little") + 1)
+                  elif fourcc == b"VP8L":
+                      coding = "lossless"
+                      bits = int.from_bytes(p[1:5], "little")
+                      size = size or ((bits & 0x3FFF) + 1,
+                                      ((bits >> 14) & 0x3FFF) + 1)
+                  elif fourcc == b"VP8 ":
+                      coding = coding or "lossy"
+                      size = size or (
+                          int.from_bytes(p[6:8], "little") & 0x3FFF,
+                          int.from_bytes(p[8:10], "little") & 0x3FFF)
+                  off += 8 + n + (n & 1)  # chunks are padded to even sizes
+              return (coding,) + (size or (None, None))
+
+          coding, w, h = webp_info(webp)
+          if coding is None:
+              fails.append(f"{webp} is not a WebP file (no RIFF/WEBP container "
+                           f"with an image chunk)")
+          else:
+              if want_lossless and coding != "lossless":
+                  fails.append(f"{webp} is {coding}, but "
+                               f"pcb_output_image_webp_lossless was set")
+              if not want_lossless and coding != "lossy":
+                  fails.append(f"{webp} is {coding}, but lossy was expected")
+
+              # A JPEG render carries no size header this script reads, so the
+              # comparison below is the PNG cases only.
+              if render.endswith(".png"):
+                  pw, ph = png_size(render)
+                  if (w, h) != (pw, ph):
+                      fails.append(f"{webp} is {w}x{h} but {render} is "
+                                   f"{pw}x{ph}; the conversion did not run on "
+                                   f"the final render")
+                  if want_cropped and (pw, ph) == (800, 600):
+                      fails.append(f"{render} is still the requested 800x600, "
+                                   f"so autoframing did not crop and the "
+                                   f"ordering check above proves nothing")
+
+          for f in fails:
+              print(f"::error::{f}")
+          sys.exit(1 if fails else 0)
+          PY
+        shell: bash

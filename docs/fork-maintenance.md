@@ -123,6 +123,13 @@ no longer zero-deletions, so that is not the invariant check any more — the
 for the `-full` tag so a hand-resolution cannot quietly restore upstream's line
 and take the meshes with it.
 
+`Dockerfile` also carries an `apt-get install webp` layer, added 2026-09-17 for
+`pcb_output_image_webp`: `cwebp` is the encoder, because `kicad-cli` renders
+PNG and JPEG and nothing else. That one is an insertion rather than a
+modification, so it does not widen the exception above, but it gets a
+`REQUIRED_ONCE` marker too — without the encoder the input fails every run,
+and a merge that dropped the layer would otherwise show up only in CI.
+
 Put new work in `glb/`, `docs/`, `scripts/` or a new workflow file rather than
 in `entrypoint.sh`, `action.yml` or `README.md` where you can help it. If a
 change genuinely must modify an upstream line, drop that file from

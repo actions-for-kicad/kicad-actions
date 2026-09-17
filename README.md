@@ -556,6 +556,43 @@ Description: Output file name of GLB PCB.
 
 > **Note:** a further 23 `pcb_output_glb_*` inputs tune the exported layers, materials, node naming and transform. See [docs/glb-export.md](docs/glb-export.md) for the full list, what the defaults do and why.
 
+## `pcb_output_image_webp`
+
+Required: `false`\
+Default: `false`\
+\
+Description: Also write the rendered image as WebP, next to the PNG or JPEG
+rather than instead of it. `kicad-cli` renders PNG and JPEG only, so this
+converts the render rather than rendering again, and runs after
+`pcb_output_image_autoframe` so both files are framed the same way. See
+[docs/glb-export.md](docs/glb-export.md#shipping-a-webp-alongside-the-png).
+
+## `pcb_output_image_webp_file_name`
+
+Required: `false`\
+\
+Description: Output file name of the WebP image. Must end in `.webp`. Empty
+takes the render's own name with the extension swapped, so `pcb.png` gives
+`pcb.webp`.
+
+## `pcb_output_image_webp_quality`
+
+Required: `false`\
+Default: `82`\
+\
+Description: WebP quality, an integer from 0 to 100. Alpha is always encoded
+losslessly, so a transparent render keeps a clean edge when it is composited.
+Ignored when `pcb_output_image_webp_lossless` is set.
+
+## `pcb_output_image_webp_lossless`
+
+Required: `false`\
+Default: `false`\
+\
+Description: Encode the WebP losslessly. A board render is flat colour and
+sharp silkscreen, which compresses better losslessly than a photograph would,
+but the file is still several times the lossy one.
+
 # 📤 Outputs
 
 This action exports multiple files based on the inputs that are given.

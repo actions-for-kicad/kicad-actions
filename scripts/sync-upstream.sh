@@ -41,9 +41,9 @@ MANUAL_FILES=(README.md)
 # Markers proving the GLB feature survived the merge intact. Matched as whole
 # lines, so the leading indentation is part of the marker.
 declare -A REQUIRED_ONCE=(
-  ["entrypoint.sh"]="source /glb/setup.sh|  source /glb/export.sh|    source /img/autoframe.sh"
-  ["action.yml"]="  pcb_output_glb:"
-  ["Dockerfile"]="COPY glb/ /glb/|COPY img/ /img/|FROM kicad/kicad:10.0-full"
+  ["entrypoint.sh"]="source /glb/setup.sh|  source /glb/export.sh|    source /img/autoframe.sh|    source /img/webp.sh"
+  ["action.yml"]="  pcb_output_glb:|  pcb_output_image_webp:"
+  ["Dockerfile"]="COPY glb/ /glb/|COPY img/ /img/|FROM kicad/kicad:10.0-full|    && apt-get -o Acquire::Retries=3 install -y --no-install-recommends webp \\"
   ["README.md"]="## \`pcb_output_glb\`"
 )
 

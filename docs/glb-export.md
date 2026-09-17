@@ -202,6 +202,48 @@ Needs a PNG with an alpha channel. An opaque background, a JPEG, or anything
 that is not an 8-bit RGBA PNG warns and leaves the image as rendered, because a
 missing crop is cosmetic and a corrupted release asset is not.
 
+## Shipping a WebP alongside the PNG
+
+`kicad-cli` renders to PNG and JPEG only, so `pcb_output_image_webp` converts
+the render it just wrote rather than rendering a second time. The render stays
+where it is and the WebP lands next to it — same picture, one pass of the
+raytracer, and a file a web page can serve at roughly a third of the bytes.
+
+```yaml
+pcb_output_image: true
+pcb_output_image_file_name: board.png
+pcb_output_image_webp: true
+pcb_output_image_webp_quality: "82"
+```
+
+That writes `board.png` and `board.webp`. The WebP name defaults to the
+render's with the extension swapped, so the pair stays matched without naming
+both; `pcb_output_image_webp_file_name` overrides it.
+
+Conversion runs *after* autoframing, which rewrites the render in place, so the
+WebP is framed the same way as the PNG it sits beside. Combining the two is the
+normal case:
+
+```yaml
+pcb_output_image_background: transparent
+pcb_output_image_autoframe: true
+pcb_output_image_webp: true
+```
+
+Alpha is always encoded losslessly, whatever the quality. A transparent render
+is composited over a page background, and that is exactly where a lossy alpha
+channel shows up — as a halo tracing the board outline.
+
+`pcb_output_image_webp_lossless` encodes the colour losslessly too. A board
+render is flat colour and sharp silkscreen, which compresses better losslessly
+than a photograph would, but the file is still several times the lossy one; it
+is worth it when the render is going to be cropped, recoloured or otherwise
+re-encoded downstream rather than displayed as-is.
+
+The encoder is `cwebp`, which the action's image installs. A missing `cwebp`
+fails the step rather than warning: unlike a skipped crop, a missing WebP is a
+missing artifact.
+
 ## Notes for PlayCanvas
 
 - glTF units are metres, so a 100 mm board arrives as 0.1 units. Either scale
