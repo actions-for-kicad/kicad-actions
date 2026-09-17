@@ -202,47 +202,60 @@ Needs a PNG with an alpha channel. An opaque background, a JPEG, or anything
 that is not an 8-bit RGBA PNG warns and leaves the image as rendered, because a
 missing crop is cosmetic and a corrupted release asset is not.
 
-## Shipping a WebP alongside the PNG
+## Exporting a WebP
 
-`kicad-cli` renders to PNG and JPEG only, so `pcb_output_image_webp` converts
-the render it just wrote rather than rendering a second time. The render stays
-where it is and the WebP lands next to it — same picture, one pass of the
-raytracer, and a file a web page can serve at roughly a third of the bytes.
-
-```yaml
-pcb_output_image: true
-pcb_output_image_file_name: board.png
-pcb_output_image_webp: true
-pcb_output_image_webp_quality: "82"
-```
-
-That writes `board.png` and `board.webp`. The WebP name defaults to the
-render's with the extension swapped, so the pair stays matched without naming
-both; `pcb_output_image_webp_file_name` overrides it.
-
-Conversion runs *after* autoframing, which rewrites the render in place, so the
-WebP is framed the same way as the PNG it sits beside. Combining the two is the
-normal case:
+`pcb_output_webp` is its own export, the way `pcb_output_image` and
+`pcb_output_svg` are. It does not need `pcb_output_image`, and it carries its
+own side, size, framing and quality rather than borrowing that block's.
 
 ```yaml
-pcb_output_image_background: transparent
-pcb_output_image_autoframe: true
-pcb_output_image_webp: true
+pcb_output_webp: true
+pcb_output_webp_file_name: board.webp
+pcb_output_webp_side: top
+pcb_output_webp_width: 1600
+pcb_output_webp_height: 900
 ```
 
-Alpha is always encoded losslessly, whatever the quality. A transparent render
-is composited over a page background, and that is exactly where a lossy alpha
-channel shows up — as a halo tracing the board outline.
+`kicad-cli` renders PNG and JPEG and nothing else, so the export renders a PNG
+and converts it. The PNG is an intermediate: it is written outside the
+workspace and removed, so the export produces exactly one file and nothing a
+later `upload-artifact` step can glob up by accident.
 
-`pcb_output_image_webp_lossless` encodes the colour losslessly too. A board
-render is flat colour and sharp silkscreen, which compresses better losslessly
-than a photograph would, but the file is still several times the lossy one; it
-is worth it when the render is going to be cropped, recoloured or otherwise
-re-encoded downstream rather than displayed as-is.
+The settings are separate on purpose. A web asset is usually not the picture
+you want archived — smaller, cropped tighter, often a different angle — and
+tying the two together would mean neither could move without the other. Set
+both blocks to the same values and you get the same picture in both formats,
+at the cost of rendering it twice.
+
+### Framing and quality
+
+`pcb_output_webp_autoframe` crops to the board before converting, the same
+measurement [Framing the rendered image](#framing-the-rendered-image)
+describes, done on the intermediate where the alpha channel still says where
+the board is. It needs the background left at `default` or set to
+`transparent`; an opaque one warns and converts the render as-is.
+
+Two quality settings, because there are two lossy steps and they are unrelated:
+
+| Input | Default | What it sets |
+| --- | --- | --- |
+| `pcb_output_webp_quality` | `basic` | how the board is raytraced — `basic`, `high`, `user`, the same values as `pcb_output_image_quality` |
+| `pcb_output_webp_encode_quality` | `82` | how the WebP is compressed, 0–100 |
+
+The names mirror the image block deliberately, so a copied render setting keeps
+working. Passing `82` to the render quality is caught with a message naming the
+other input.
+
+Alpha is always encoded losslessly whatever the encode quality, because a
+transparent render gets composited over a page background and that is exactly
+where a lossy alpha channel shows up — as a halo tracing the board outline.
+`pcb_output_webp_lossless` makes the colour lossless too; on a board render,
+which is flat colour and sharp silkscreen, that costs less than it would on a
+photograph, but the file is still several times the lossy one.
 
 The encoder is `cwebp`, which the action's image installs. A missing `cwebp`
-fails the step rather than warning: unlike a skipped crop, a missing WebP is a
-missing artifact.
+fails the export rather than warning, and fails before the render rather than
+after it, so a typo does not cost a minute of raytracing to discover.
 
 ## Notes for PlayCanvas
 

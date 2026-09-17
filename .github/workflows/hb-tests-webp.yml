@@ -1,0 +1,156 @@
+name: WebP tests
+
+# Covers the fork's WebP export. Kept separate from tests.yml for the same
+# reason hb-tests-glb.yml is: that file is edited upstream regularly, and
+# adding no lines to it keeps the sync conflict-free.
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "**/*.md"
+  pull_request:
+    paths-ignore:
+      - ".gitignore"
+      - "LICENSE"
+      - "**/*.md"
+
+jobs:
+  test-pcb-webp:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - test_name: webp
+            expected_file: pcb.webp
+          - test_name: webp-named-side
+            expected_file: board.webp
+            pcb_output_webp_file_name: board.webp
+            pcb_output_webp_side: bottom
+          - test_name: webp-lossless
+            expected_file: pcb.webp
+            # Quoted so the '||' default below does not treat it as unset.
+            pcb_output_webp_lossless: "true"
+            expect_lossless: "true"
+          - test_name: webp-autoframed
+            expected_file: pcb.webp
+            pcb_output_webp_autoframe: "true"
+            expect_cropped: "true"
+          # The export stands alone: no pcb_output_image, and the PNG
+          # intermediate must not survive into the workspace.
+          - test_name: webp-alongside-png
+            expected_file: pcb.webp
+            pcb_output_image: "true"
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Run WebP export
+        uses: ./
+        with:
+          pcb_file_name: tests/kicad-project-success/kicad-project.kicad_pcb
+          footprint_libraries: "test-fp-library=tests/kicad-project-success/test-fp-library.pretty"
+          pcb_output_webp: true
+          pcb_output_webp_file_name: ${{ matrix.pcb_output_webp_file_name || 'pcb.webp' }}
+          pcb_output_webp_side: ${{ matrix.pcb_output_webp_side || 'top' }}
+          pcb_output_webp_width: 800
+          pcb_output_webp_height: 600
+          pcb_output_webp_autoframe: ${{ matrix.pcb_output_webp_autoframe || false }}
+          pcb_output_webp_lossless: ${{ matrix.pcb_output_webp_lossless || false }}
+          pcb_output_image: ${{ matrix.pcb_output_image || false }}
+
+      - name: Verify output files
+        run: |
+          file="${{ matrix.expected_file }}"
+          if [[ ! -f "$file" ]]; then
+            echo "::error::Expected output file '$file' not found!"
+            exit 1
+          fi
+
+          # The render is an intermediate. A PNG left in the workspace
+          # means it escaped into what a later upload-artifact step globs.
+          expected_png=""
+          if [[ "${{ matrix.pcb_output_image || false }}" == "true" ]]; then
+            expected_png=pcb.png
+            if [[ ! -f $expected_png ]]; then
+              echo "::error::pcb_output_image was set but $expected_png is missing."
+              exit 1
+            fi
+          fi
+          shopt -s nullglob
+          for png in *.png; do
+            [[ $png == "$expected_png" ]] && continue
+            echo "::error::PNG left in the workspace: $png"
+            exit 1
+          done
+        shell: bash
+
+      # Existence proves neither the container format nor that the settings
+      # reached the encoder.
+      - name: Verify WebP
+        run: |
+          python3 - "${{ matrix.expected_file }}" \
+                    "${{ matrix.expect_lossless || 'false' }}" \
+                    "${{ matrix.expect_cropped || 'false' }}" <<'PY'
+          import sys
+
+          path, want_lossless, want_cropped = sys.argv[1:4]
+          want_lossless = want_lossless == "true"
+          want_cropped = want_cropped == "true"
+          fails = []
+
+          def webp_info(p):
+              """(coding, width, height) by walking the RIFF chunks."""
+              d = open(p, "rb").read()
+              if d[:4] != b"RIFF" or d[8:12] != b"WEBP":
+                  return None, None, None
+              off, coding, size = 12, None, None
+              while off + 8 <= len(d):
+                  fourcc = d[off:off + 4]
+                  n = int.from_bytes(d[off + 4:off + 8], "little")
+                  c = d[off + 8:off + 8 + n]
+                  if fourcc == b"VP8X":
+                      # Canvas size, stored as 24-bit minus-one values.
+                      size = (int.from_bytes(c[4:7], "little") + 1,
+                              int.from_bytes(c[7:10], "little") + 1)
+                  elif fourcc == b"VP8L":
+                      coding = "lossless"
+                      bits = int.from_bytes(c[1:5], "little")
+                      size = size or ((bits & 0x3FFF) + 1,
+                                      ((bits >> 14) & 0x3FFF) + 1)
+                  elif fourcc == b"VP8 ":
+                      coding = coding or "lossy"
+                      size = size or (
+                          int.from_bytes(c[6:8], "little") & 0x3FFF,
+                          int.from_bytes(c[8:10], "little") & 0x3FFF)
+                  off += 8 + n + (n & 1)  # chunks are padded to even sizes
+              return (coding,) + (size or (None, None))
+
+          coding, w, h = webp_info(path)
+          if coding is None:
+              fails.append(f"{path} is not a WebP file (no RIFF/WEBP container "
+                           f"with an image chunk)")
+          else:
+              if want_lossless and coding != "lossless":
+                  fails.append(f"{path} is {coding}, but "
+                               f"pcb_output_webp_lossless was set")
+              if not want_lossless and coding != "lossy":
+                  fails.append(f"{path} is {coding}, but lossy was expected")
+
+              if want_cropped:
+                  if (w, h) == (800, 600):
+                      fails.append(f"{path} is still the requested 800x600, so "
+                                   f"autoframing did not crop the render")
+              elif (w, h) != (800, 600):
+                  fails.append(f"{path} is {w}x{h}, not the requested 800x600; "
+                               f"the render settings did not reach kicad-cli")
+
+          for f in fails:
+              print(f"::error::{f}")
+          sys.exit(1 if fails else 0)
+          PY
+        shell: bash

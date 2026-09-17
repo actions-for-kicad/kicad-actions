@@ -28,6 +28,7 @@ symbol_lib_path="$config_dir/sym-lib-table"
 footprint_lib_path="$config_dir/fp-lib-table"
 
 source /glb/setup.sh
+source /img/setup.sh
 
 if [ "$(printf '%s\n' "$required_version" "$kicad_version" | sort -V | head -n1)" != "$required_version" ]; then
     echo "::error::KiCad version 8.0 or higher is required."
@@ -444,8 +445,10 @@ if [[ -n $INPUT_PCB_FILE_NAME ]]; then
     [[ $INPUT_PCB_OUTPUT_IMAGE_FLOOR == "true" ]] && cmd+=(--floor)
     "${cmd[@]}" "$INPUT_PCB_FILE_NAME"
     source /img/autoframe.sh
-    source /img/webp.sh
   fi
+
+  # Export PCB WebP render
+  source /img/webp.sh
 fi
 
 # Run jobset

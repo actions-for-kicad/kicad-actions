@@ -386,19 +386,64 @@ inputs:
     description: "Transparent border autoframing keeps, as a fraction of the cropped size. Default '0.04'."
     default: "0.04"
 
-  pcb_output_image_webp:
-    description: "Also write the rendered image as WebP, next to the PNG or JPEG rather than instead of it. kicad-cli renders PNG and JPEG only, so this converts the render it just wrote: the same picture, in the format a web page wants. Runs after 'pcb_output_image_autoframe', so the WebP is framed the same way."
+  # PCB WebP output
+  pcb_output_webp:
+    description: "Run the WebP export of the PCB. kicad-cli renders PNG and JPEG only, so this renders and converts: the PNG is an intermediate and is removed, leaving only the WebP. Independent of 'pcb_output_image' -- set both, with the same settings, to get the same picture in both formats."
     default: false
 
-  pcb_output_image_webp_file_name:
-    description: "Output file name of the WebP image. Must end in '.webp'. Empty takes the render's own name with the extension swapped, so 'pcb.png' gives 'pcb.webp'."
-    default: ""
+  pcb_output_webp_file_name:
+    description: "Output file name of WebP PCB. Must end in '.webp'."
+    default: "pcb.webp"
 
-  pcb_output_image_webp_quality:
-    description: "WebP quality, an integer from 0 to 100. Alpha is always encoded losslessly, so a transparent render keeps a clean edge when composited. Ignored when 'pcb_output_image_webp_lossless' is set."
+  pcb_output_webp_side:
+    description: "Side of the WebP PCB. Options: 'top', 'bottom', 'left', 'right', 'front', 'back'."
+    default: "top"
+
+  pcb_output_webp_background:
+    description: "Background of the WebP PCB. Options: 'default', 'transparent', 'opaque'. The intermediate render is a PNG, so 'default' is transparent. WebP carries an alpha channel, and it is always encoded losslessly."
+    default: "default"
+
+  pcb_output_webp_width:
+    description: "Width of the WebP PCB in pixels."
+    default: "1600"
+
+  pcb_output_webp_height:
+    description: "Height of the WebP PCB in pixels."
+    default: "900"
+
+  pcb_output_webp_floor:
+    description: "Enables floor, shadows and post-processing."
+    default: false
+
+  pcb_output_webp_perspective:
+    description: "Enables perspective view."
+    default: false
+
+  pcb_output_webp_quality:
+    description: "Render quality of the WebP PCB, the same setting as 'pcb_output_image_quality'. Options: 'basic', 'high', 'user'. This is how the board is raytraced, not how the WebP is compressed -- that is 'pcb_output_webp_encode_quality'."
+    default: "basic"
+
+  pcb_output_webp_zoom:
+    description: "Zoom factor of the WebP PCB."
+    default: "1.0"
+
+  pcb_output_webp_rotate:
+    description: "Rotation of the WebP PCB. Format: 'x,y,z'."
+    default: "0,0,0"
+
+  pcb_output_webp_autoframe:
+    description: "Crop the render to the board using its alpha channel before converting, so the board is centred and the dead margin is trimmed. Needs 'pcb_output_webp_background' left at 'default' or set to 'transparent'. Changes the output dimensions: the result is the board plus the margin, not the requested width and height."
+    default: false
+
+  pcb_output_webp_autoframe_margin:
+    description: "Transparent border autoframing keeps, as a fraction of the cropped size. Default '0.04'."
+    default: "0.04"
+
+  pcb_output_webp_encode_quality:
+    description: "WebP encoder quality, an integer from 0 to 100. Alpha is always encoded losslessly whatever this is, so a transparent render keeps a clean edge where it is composited. Ignored when 'pcb_output_webp_lossless' is set."
     default: "82"
 
-  pcb_output_image_webp_lossless:
+  pcb_output_webp_lossless:
     description: "Encode the WebP losslessly. A board render is flat colour and sharp silkscreen, which compresses better losslessly than a photograph would, but the file is still several times the lossy one."
     default: false
 
