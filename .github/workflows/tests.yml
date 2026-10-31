@@ -466,8 +466,8 @@ jobs:
 
       - name: Verify output file
         run: |
-          if [[ ! -f jobset_out/erc.rpt ]]; then
-            echo "::error::Expected output file 'jobset_out/erc.rpt' not found!"
+          if [[ ! -f tests/kicad-project-success/jobset_out/erc.rpt ]]; then
+            echo "::error::Expected output file 'tests/kicad-project-success/jobset_out/erc.rpt' not found!"
             exit 1
           fi
         shell: bash
